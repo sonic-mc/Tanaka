@@ -18,13 +18,61 @@
         <!-- Sidebar -->
         <nav class="bg-primary text-white p-3" style="width: 250px;">
             <h4 class="text-white mb-4">{{ config('app.name', 'Psych Monitor') }}</h4>
+
+            @php
+                $role = Auth::user()->role ?? 'guest';
+            @endphp
+
             <ul class="nav flex-column">
-                <li class="nav-item"><a href="#" class="nav-link text-white">Dashboard</a></li>
-                <li class="nav-item"><a href="#" class="nav-link text-white">Patients</a></li>
-                <li class="nav-item"><a href="#" class="nav-link text-white">Evaluations</a></li>
-                <li class="nav-item"><a href="#" class="nav-link text-white">Progress Reports</a></li>
-                <li class="nav-item"><a href="#" class="nav-link text-white">Reports</a></li>
-                <li class="nav-item"><a href="#" class="nav-link text-white">Admin Tools</a></li>
+
+                {{-- Common Links (All Roles) --}}
+                <li class="nav-item">
+                    <a href="#" class="nav-link text-white">Dashboard</a>
+                </li>
+
+                {{-- Psychiatrist & Nurse --}}
+                @if(in_array($role, ['psychiatrist','nurse']))
+                    <li class="nav-item">
+                        <a href="{{ route('patients.index') }}" class="nav-link text-white">Patients</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('evaluations.index') }}" class="nav-link text-white">Evaluations</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link text-white">Progress Monitoring</a>
+                    </li>
+                @endif
+
+                {{-- Psychiatrist only --}}
+                @if($role === 'psychiatrist')
+                    <li class="nav-item">
+                        <a href="#" class="nav-link text-white">Decision Support</a>
+                    </li>
+                @endif
+
+                {{-- All clinical staff --}}
+                @if(in_array($role, ['psychiatrist','nurse']))
+                    <li class="nav-item">
+                        <a href="#" class="nav-link text-white">Reports</a>
+                    </li>
+                @endif
+
+                {{-- Admin only --}}
+                @if($role === 'admin')
+                    <li class="nav-item">
+                        <a href="#" class="nav-link text-white">User Management</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link text-white">System Activity Logs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link text-white">Data Backup & Restore</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link text-white">Billing & Payments</a>
+                    </li>
+                @endif
+
             </ul>
         </nav>
 
@@ -39,9 +87,7 @@
                             {{ Auth::user()->name ?? 'User' }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <a class="dropdown-item" href="#">Profile</a>
-                            </li>
+                            <li><a class="dropdown-item" href="#">Profile</a></li>
                             <li>
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
@@ -49,7 +95,6 @@
                                 </form>
                             </li>
                         </ul>
-                        
                     </div>
                 </div>
             </nav>
