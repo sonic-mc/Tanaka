@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ProgressReport;
+use App\Models\Patient;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class ProgressReportController extends Controller
@@ -11,7 +14,8 @@ class ProgressReportController extends Controller
      */
     public function index()
     {
-        //
+        $reports = ProgressReport::with(['patient', 'reporter'])->latest()->paginate(10);
+        return view('nurse.progress.index', compact('reports'));
     }
 
     /**
@@ -19,7 +23,9 @@ class ProgressReportController extends Controller
      */
     public function create()
     {
-        //
+        $patients = Patient::all();
+        $staff = User::whereIn('role', ['nurse', 'psychiatrist'])->get();
+        return view('nurse.progress.create', compact('patients', 'staff'));
     }
 
     /**
@@ -27,7 +33,18 @@ class ProgressReportController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'patient_id' => 'required|exists:patients,id',
+            'reported_by' => 'required|exists:users,id',
+            'notes' => 'nullable|string',
+            'behavior' => 'nullable|string',
+            'medication_response' => 'nullable|string',
+            'attendance' => 'required|boolean',
+        ]);
+
+        ProgressReport::create($validated);
+
+        return redirect()->route('progress-reports.index')->with('success', 'Progress report submitted.');
     }
 
     /**
@@ -35,7 +52,8 @@ class ProgressReportController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $report = ProgressReport::with(['patient', 'reporter'])->findOrFail($id);
+        return view('admin.progress.show', compact('report'));
     }
 
     /**
@@ -43,7 +61,10 @@ class ProgressReportController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        $report = ProgressReport::findOrFail($id);
+        $patients = Patient::all();
+        $staff = User::whereIn('role', ['nurse', 'psychiatrist'])->get();
+        return view('admin.progress.edit', compact('report', 'patients', 'staff'));
     }
 
     /**
@@ -51,7 +72,20 @@ class ProgressReportController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $report = ProgressReport::findOrFail($id);
+
+        $validated = $request->validate([
+            'patient_id' => 'required|exists:patients,id',
+            'reported_by' => 'required|exists:users,id',
+            'notes' => 'nullable|string',
+            'behavior' => 'nullable|string',
+            'medication_response' => 'nullable|string',
+            'attendance' => 'required|boolean',
+        ]);
+
+        $report->update($validated);
+
+        return redirect()->route('progress-reports.index')->with('success', 'Progress report updated.');
     }
 
     /**
@@ -59,6 +93,9 @@ class ProgressReportController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $report = ProgressReport::findOrFail($id);
+        $report->delete();
+
+        return redirect()->route('progress-reports.index')->with('success', 'Progress report deleted.');
     }
 }
