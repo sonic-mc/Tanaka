@@ -1,26 +1,156 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Psych Monitor') }}</title>
+    <title>@yield('title', 'Auth Page')</title>
 
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #1f293a;
+        }
+        .container {
+            position: relative;
+            width: 256px;
+            height: 256px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container span {
+            position: absolute;
+            left: 0;
+            width: 25px;
+            height: 6px;
+            background: #2c4766;
+            border-radius: 8px;
+            transform-origin: 128px;
+            transform: scale(2.2) rotate(calc(var(--i) * (360deg / 50)));
+            animation: animateBlink 3s linear infinite;
+            animation-delay: calc(var(--i) * (3s / 50));
+        }
+        @keyframes animateBlink {
+            0% { background: #0ef; }
+            25% { background: #2c4766; }
+        }
+        .login-box {
+            position: absolute;
+            width: 400px;
+        }
+        .login-box form {
+            width: 100%;
+            padding: 0 50px;
+        }
+        h2 {
+            font-size: 2em;
+            color: #0ef;
+            text-align: center;
+        }
+        .input-box {
+            position: relative;
+            margin: 25px 0;
+        }
+        .input-box input {
+            width: 100%;
+            height: 50px;
+            background: transparent;
+            border: 2px solid #2c4766;
+            outline: none;
+            border-radius: 40px;
+            font-size: 1em;
+            color: #fff;
+            padding: 0 20px;
+            transition: .5s ease;
+        }
+        .input-box input:focus,
+        .input-box input:valid {
+            border-color: #0ef;
+        }
+        .input-box label {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            font-size: 1em;
+            color: #fff;
+            pointer-events: none;
+            transition: .5s ease;
+        }
+        .input-box input:focus~label,
+        .input-box input:valid~label {
+            top: 1px;
+            font-size: .8em;
+            background: #1f293a;
+            padding: 0 6px;
+            color: #0ef;
+        }
+        .forgot-pass {
+            margin: -15px 0 10px;
+            text-align: center;
+        }
+        .forgot-pass a {
+            font-size: .85em;
+            color: #fff;
+            text-decoration: none;
+        }
+        .forgot-pass a:hover {
+            text-decoration: underline;
+        }
+        .btn {
+            width: 100%;
+            height: 45px;
+            background: #0ef;
+            border: none;
+            outline: none;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 1em;
+            color: #1f293a;
+            font-weight: 600;
+        }
+        .signup-link {
+            margin: 20px 0 10px;
+            text-align: center;
+        }
+        .signup-link a {
+            font-size: 1em;
+            color: #0ef;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .signup-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
-<body class="bg-white">
-    <div class="d-flex justify-content-center align-items-center vh-100">
-        <div class="card shadow-sm rounded-4 p-4" style="width: 100%; max-width: 400px;">
+<body>
+
+    <div class="container">
+        <div class="login-box">
+            {{-- Auth page content goes here --}}
             @yield('content')
         </div>
+
+        {{-- Animation ring --}}
+        @for ($i = 0; $i < 50; $i++)
+            <span style="--i:{{ $i }};"></span>
+        @endfor
     </div>
 
-    <!-- Bootstrap JS (optional for dropdowns, modals, etc.) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
