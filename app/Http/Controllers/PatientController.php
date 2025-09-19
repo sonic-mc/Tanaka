@@ -6,13 +6,49 @@ use App\Models\Patient;
 use App\Models\CareLevel;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+
 
 class PatientController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $patients = Patient::with('careLevel', 'admittedBy')->latest()->paginate(10);
-        return view('admin.patients.index', compact('patients'));
+        $user = Auth::user();
+        $careLevels = CareLevel::all();
+
+        // Assigned patients
+        $assignedPatients = Patient::where('admitted_by', $user->id)
+            ->when($request->assigned_search, function ($query) use ($request) {
+                $query->where(function ($q) use ($request) {
+                    $q->where('first_name', 'like', '%' . $request->assigned_search . '%')
+                    ->orWhere('last_name', 'like', '%' . $request->assigned_search . '%')
+                    ->orWhere('patient_code', 'like', '%' . $request->assigned_search . '%');
+                });
+            })
+            ->when($request->assigned_status, fn($q) => $q->where('status', $request->assigned_status))
+            ->when($request->assigned_gender, fn($q) => $q->where('gender', $request->assigned_gender))
+            ->when($request->assigned_care_level, fn($q) => $q->where('current_care_level_id', $request->assigned_care_level))
+            ->with('careLevel')
+            ->get();
+
+        // All patients
+        $allPatients = Patient::query()
+            ->when($request->all_search, function ($query) use ($request) {
+                $query->where(function ($q) use ($request) {
+                    $q->where('first_name', 'like', '%' . $request->all_search . '%')
+                    ->orWhere('last_name', 'like', '%' . $request->all_search . '%')
+                    ->orWhere('patient_code', 'like', '%' . $request->all_search . '%');
+                });
+            })
+            ->when($request->all_status, fn($q) => $q->where('status', $request->all_status))
+            ->when($request->all_gender, fn($q) => $q->where('gender', $request->all_gender))
+            ->when($request->all_care_level, fn($q) => $q->where('current_care_level_id', $request->all_care_level))
+            ->with('careLevel')
+            ->get();
+
+        return view('nurse.patients.index', compact('assignedPatients', 'allPatients', 'careLevels'));
     }
 
     public function create()
@@ -47,7 +83,10 @@ class PatientController extends Controller
     public function show($id)
     {
         $patient = Patient::with(['careLevel', 'admittedBy', 'evaluations', 'progressReports'])->findOrFail($id);
-        return view('admin.patients.show', compact('patient'));
+        $evaluations = $patient->evaluations()->with('evaluator')->latest()->get();
+        $progressReports = $patient->progressReports()->with('reporter')->latest()->get();
+        $billingStatement = $patient->billingStatement;
+        return view('nurse.patients.show', compact('patient', 'evaluations', 'progressReports', 'billingStatement'));
     }
 
     public function edit($id)

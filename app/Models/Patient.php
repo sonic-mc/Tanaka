@@ -53,5 +53,8 @@ class Patient extends Model
     {
         return $this->hasMany(IncidentReport::class);
     }
+
+   
+
 }
 

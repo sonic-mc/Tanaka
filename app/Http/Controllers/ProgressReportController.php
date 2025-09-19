@@ -12,10 +12,13 @@ class ProgressReportController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $reports = ProgressReport::with(['patient', 'reporter'])->latest()->paginate(10);
-        return view('nurse.progress.index', compact('reports'));
+        $patients = Patient::orderBy('last_name')->get();
+        $treatmentGoals = json_encode($request->input('treatment_goals'));
+    
+        return view('nurse.progress.index', compact('reports', 'patients', 'treatmentGoals'));
     }
 
     /**
@@ -33,29 +36,67 @@ class ProgressReportController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $data = $request->validate([
             'patient_id' => 'required|exists:patients,id',
             'reported_by' => 'required|exists:users,id',
             'notes' => 'nullable|string',
-            'behavior' => 'nullable|string',
-            'medication_response' => 'nullable|string',
-            'attendance' => 'required|boolean',
+            'depressed_mood' => 'nullable|integer|min:1|max:10',
+            'anxiety' => 'nullable|integer|min:1|max:10',
+            'suicidal_ideation' => 'nullable|integer|min:1|max:10',
+            'hallucinations' => 'nullable|string',
+            'delusions' => 'nullable|string',
+            'self_care' => 'nullable|string',
+            'work_school' => 'nullable|string',
+            'social_interactions' => 'nullable|string',
+            'daily_activities' => 'nullable|string',
+            'attention' => 'nullable|string',
+            'memory' => 'nullable|string',
+            'decision_making' => 'nullable|string',
+            'emotional_regulation' => 'nullable|string',
+            'insight' => 'nullable|string',
+            'medication_adherence' => 'nullable|boolean',
+            'therapy_engagement' => 'nullable|boolean',
+            'risk_behaviors' => 'nullable|string',
+            'sleep_activity_patterns' => 'nullable|string',
+            'weight' => 'nullable|numeric',
+            'vital_signs' => 'nullable|string',
+            'medication_side_effects' => 'nullable|string',
+            'general_health' => 'nullable|string',
+            'family_support' => 'nullable|string',
+            'peer_support' => 'nullable|string',
+            'housing_stability' => 'nullable|string',
+            'access_to_services' => 'nullable|string',
+            'suicide_risk' => 'nullable|integer|min:1|max:3',
+            'homicide_risk' => 'nullable|integer|min:1|max:3',
+            'self_neglect_risk' => 'nullable|integer|min:1|max:3',
+            'vulnerability_risk' => 'nullable|integer|min:1|max:3',
+            'treatment_goals' => 'nullable|array',
+            'treatment_goals.*.goal' => 'nullable|string',
+            'treatment_goals.*.baseline' => 'nullable|numeric',
+            'treatment_goals.*.current' => 'nullable|numeric',
+            'treatment_goals.*.notes' => 'nullable|string',
+            'next_review_date' => 'nullable|date',
         ]);
 
-        ProgressReport::create($validated);
+        ProgressReport::create($data);
 
-        return redirect()->route('progress-reports.index')->with('success', 'Progress report submitted.');
+        return redirect()->back()->with('success', 'Progress report saved successfully!');
     }
+
 
     /**
      * Display the specified resource.
      */
     public function show(string $id)
     {
+        // Load report with patient and reporter relationships
         $report = ProgressReport::with(['patient', 'reporter'])->findOrFail($id);
-        return view('admin.progress.show', compact('report'));
+    
+        // Decode treatment goals JSON
+        $treatmentGoals = $report->treatment_goals ? json_decode($report->treatment_goals, true) : [];
+    
+        return view('nurse.progress.show', compact('report', 'treatmentGoals'));
     }
-
     /**
      * Show the form for editing the specified resource.
      */

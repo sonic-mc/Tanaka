@@ -56,7 +56,9 @@ Route::middleware(['auth', 'role:psychiatrist|nurse'])->group(function () {
     Route::resource('evaluations', EvaluationController::class);
     Route::resource('progress-reports', ProgressReportController::class);
     Route::resource('therapy-sessions', TherapySessionController::class);
-    Route::resource('incidents', IncidentController::class);
+    Route::resource('incidents', IncidentReportController::class);
+    Route::resource('therapy-sessions', TherapySessionController::class);
+
 
     Route::post('/notifications/mark-read/{notification}', [NotificationController::class, 'markRead'])
         ->name('notifications.markRead');
