@@ -100,7 +100,7 @@
                     <div class="card shadow-sm mb-3">
                         <div class="card-body">
                             <h5 class="card-title">Incidents by Month</h5>
-                            <canvas id="incidentsByMonthChart"></canvas>
+                            <canvas id="incidentsByMonthChart" style="height: 300px;"></canvas>
                         </div>
                     </div>
                 </div>
@@ -108,12 +108,21 @@
                     <div class="card shadow-sm mb-3">
                         <div class="card-body">
                             <h5 class="card-title">Recurrence by Patient</h5>
-                            <canvas id="recurrenceChart"></canvas>
+                            <canvas id="recurrenceChart" style="height: 300px;"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <script>
+            const incidentsByMonthLabels = {!! json_encode($incidentStats->keys()->map(fn($m) => date('F', mktime(0, 0, 0, $m, 1))) ) !!};
+            const incidentsByMonthData = {!! json_encode($incidentStats->values()) !!};
+        
+            const recurrenceLabels = {!! json_encode($recurrenceStats->pluck('patient.full_name')) !!};
+            const recurrenceData = {!! json_encode($recurrenceStats->pluck('count')) !!};
+        </script>
+        
 
         <!-- Staff Insights -->
         <div class="tab-pane fade" id="staff">

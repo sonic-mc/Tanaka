@@ -93,14 +93,14 @@ class IncidentReportController extends Controller
             'description' => $request->description,
         ]);
 
-        return redirect()->route('incident.index')->with('success', 'Incident report submitted successfully.');
+        return redirect()->route('incidents.index')->with('success', 'Incident report submitted successfully.');
     }
 
     // View a single report
     public function show(IncidentReport $incidentReport)
     {
         $incidentReport->load(['patient', 'reporter']);
-        return view('incident.show', compact('incidentReport'));
+        return view('nurse.incident.show', compact('incidentReport'));
     }
 
     // Optional: filter reports by patient

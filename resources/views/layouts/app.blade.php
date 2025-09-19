@@ -200,5 +200,48 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            new Chart(document.getElementById('incidentsByMonthChart'), {
+                type: 'bar',
+                data: {
+                    labels: incidentsByMonthLabels,
+                    datasets: [{
+                        label: 'Incidents',
+                        data: incidentsByMonthData,
+                        backgroundColor: '#0d6efd'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+    
+            new Chart(document.getElementById('recurrenceChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: recurrenceLabels,
+                    datasets: [{
+                        label: 'Recurrence',
+                        data: recurrenceData,
+                        backgroundColor: ['#198754', '#ffc107', '#dc3545', '#0d6efd', '#6f42c1']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        });
+    </script>
+    
+
 </body>
 </html>
