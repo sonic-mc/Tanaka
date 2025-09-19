@@ -4,6 +4,9 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Routing\Router;
+use Spatie\Permission\Middleware\RoleMiddleware;
+
+
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,6 +23,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        app(Router::class)->aliasMiddleware('role', \App\Http\Middleware\RoleMiddleware::class);
+        app(Router::class)->aliasMiddleware('role', RoleMiddleware::class);
     }
+    
 }

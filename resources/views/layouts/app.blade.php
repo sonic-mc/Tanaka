@@ -145,44 +145,45 @@
         </div>
     </nav>
 
-    <!-- Sidebar -->
-    <nav class="fixed-sidebar p-3">
-        <h4 class="text-white mb-4">
-            <i class="bi bi-heart-pulse-fill me-2"></i>{{ config('app.name', 'Psych Monitor') }}
-        </h4>
+   <!-- Sidebar -->
+<nav class="fixed-sidebar p-3">
+    <h4 class="text-white mb-4">
+        <i class="bi bi-heart-pulse-fill me-2"></i>{{ config('app.name', 'Psych Monitor') }}
+    </h4>
 
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a href="{{ route('dashboard') }}" class="nav-link {{ isActive('dashboard') }}">
-                    <i class="bi bi-speedometer2 me-2"></i> Dashboard
-                </a>
-            </li>
+    <ul class="nav flex-column">
+        <li class="nav-item">
+            <a href="{{ route('dashboard') }}" class="nav-link {{ isActive('dashboard') }}">
+                <i class="bi bi-speedometer2 me-2"></i> Dashboard
+            </a>
+        </li>
 
-            @if(in_array($role, ['psychiatrist','nurse']))
-                <li class="nav-item"><a href="{{ route('patients.index') }}" class="nav-link {{ isActive('patients*') }}"><i class="bi bi-person-lines-fill me-2"></i> Patients</a></li>
-                <li class="nav-item"><a href="{{ route('evaluations.index') }}" class="nav-link {{ isActive('evaluations*') }}"><i class="bi bi-clipboard-pulse me-2"></i> Evaluations</a></li>
-                <li class="nav-item"><a href="{{ route('progress-reports.index') }}" class="nav-link {{ isActive('progress-reports*') }}"><i class="bi bi-bar-chart-line-fill me-2"></i> Progress Monitoring</a></li>
-                <li class="nav-item"><a href="{{ route('therapy-sessions.index') }}" class="nav-link {{ isActive('therapy-sessions*') }}"><i class="bi bi-calendar-check me-2"></i> Therapy Sessions</a></li>
-                <li class="nav-item"><a href="{{ route('incidents.index') }}" class="nav-link {{ isActive('incidents*') }}"><i class="bi bi-exclamation-triangle me-2"></i> Incidents</a></li>
-                <li class="nav-item"><a href="{{ route('notifications.index') }}" class="nav-link {{ isActive('notifications*') }}"><i class="bi bi-bell me-2"></i> Notifications</a></li>
-            @endif
+        @if(auth()->user()->hasAnyRole(['psychiatrist','nurse']))
+            <li class="nav-item"><a href="{{ route('patients.index') }}" class="nav-link {{ isActive('patients*') }}"><i class="bi bi-person-lines-fill me-2"></i> Patients</a></li>
+            <li class="nav-item"><a href="{{ route('evaluations.index') }}" class="nav-link {{ isActive('evaluations*') }}"><i class="bi bi-clipboard-pulse me-2"></i> Evaluations</a></li>
+            <li class="nav-item"><a href="{{ route('progress-reports.index') }}" class="nav-link {{ isActive('progress-reports*') }}"><i class="bi bi-bar-chart-line-fill me-2"></i> Progress Monitoring</a></li>
+            <li class="nav-item"><a href="{{ route('therapy-sessions.index') }}" class="nav-link {{ isActive('therapy-sessions*') }}"><i class="bi bi-calendar-check me-2"></i> Therapy Sessions</a></li>
+            <li class="nav-item"><a href="{{ route('incidents.index') }}" class="nav-link {{ isActive('incidents*') }}"><i class="bi bi-exclamation-triangle me-2"></i> Incidents</a></li>
+            <li class="nav-item"><a href="{{ route('notifications.index') }}" class="nav-link {{ isActive('notifications*') }}"><i class="bi bi-bell me-2"></i> Notifications</a></li>
+        @endif
 
-            @if($role === 'psychiatrist')
-                <li class="nav-item"><a href="#" class="nav-link"><i class="bi bi-lightbulb-fill me-2"></i> Decision Support</a></li>
-            @endif
+        @if(auth()->user()->hasRole('psychiatrist'))
+            <li class="nav-item"><a href="#" class="nav-link"><i class="bi bi-lightbulb-fill me-2"></i> Decision Support</a></li>
+        @endif
 
-            @if(in_array($role, ['psychiatrist','nurse']))
-                <li class="nav-item"><a href="#" class="nav-link"><i class="bi bi-file-earmark-text-fill me-2"></i> Reports</a></li>
-            @endif
+        @if(auth()->user()->hasAnyRole(['psychiatrist','nurse']))
+            <li class="nav-item"><a href="#" class="nav-link"><i class="bi bi-file-earmark-text-fill me-2"></i> Reports</a></li>
+        @endif
 
-            @if($role === 'admin')
-                <li class="nav-item"><a href="#" class="nav-link"><i class="bi bi-people-fill me-2"></i> User Management</a></li>
-                <li class="nav-item"><a href="#" class="nav-link"><i class="bi bi-journal-text me-2"></i> System Activity Logs</a></li>
-                <li class="nav-item"><a href="#" class="nav-link"><i class="bi bi-cloud-arrow-down-fill me-2"></i> Data Backup & Restore</a></li>
-                <li class="nav-item"><a href="#" class="nav-link"><i class="bi bi-credit-card-2-front-fill me-2"></i> Billing & Payments</a></li>
-            @endif
-        </ul>
-    </nav>
+        @if(auth()->user()->hasRole('admin'))
+            <li class="nav-item"><a href="#" class="nav-link"><i class="bi bi-people-fill me-2"></i> User Management</a></li>
+            <li class="nav-item"><a href="#" class="nav-link"><i class="bi bi-journal-text me-2"></i> System Activity Logs</a></li>
+            <li class="nav-item"><a href="#" class="nav-link"><i class="bi bi-cloud-arrow-down-fill me-2"></i> Data Backup & Restore</a></li>
+            <li class="nav-item"><a href="#" class="nav-link"><i class="bi bi-credit-card-2-front-fill me-2"></i> Billing & Payments</a></li>
+        @endif
+    </ul>
+</nav>
+
 
     <!-- Main Content -->
     <div class="main-content">
