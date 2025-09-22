@@ -33,6 +33,10 @@ use App\Models\VitalSign;
 use App\Models\Allergy;
 use App\Models\Immunization;
 use App\Models\BillingStatement;
+use App\Models\MedicalHistory;
+use App\Models\LabResult;
+use App\Models\RadiologyReport;
+
 
 
 
@@ -100,7 +104,7 @@ class DashboardController extends Controller
         $recentPayments = Payment::latest()->take(5)->get();
     
         // Notifications & Alerts
-        $unreadNotifications = Notification::whereNull('read')->count();
+        $unreadNotifications = Notification::whereNull('read_at')->count();
         $recentNotifications = Notification::latest()->take(5)->get();
 
         $therapySessionCount = TherapySession::count();
@@ -112,6 +116,10 @@ class DashboardController extends Controller
         $dischargeCount = Discharge::count();
 
         $billingCount = BillingStatement::count();
+
+        $paymentCount = Payment::count();
+
+        $notificationCount = Auth::user()->unreadNotifications()->count();
     
         // Roles & permissions
         $roles = Role::all();
@@ -140,6 +148,8 @@ class DashboardController extends Controller
             'progressReportCount',
             'dischargeCount',
             'billingCount',
+            'paymentCount',
+            'notificationCount',
             'roles',
             'permissions',
             'users'
