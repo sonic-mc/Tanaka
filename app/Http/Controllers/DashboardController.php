@@ -12,6 +12,28 @@ use App\Models\User;
 use App\Models\Task;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use App\Models\Prescription;
+use App\Models\Medication;
+use App\Models\Invoice;
+use App\Models\Payment;
+use App\Models\Notification;
+use App\Models\Evaluation;
+use App\Models\Staff;
+use App\Models\Doctor;
+use App\Models\PsychoSocialAssessment;
+use App\Models\TherapySession;
+use App\Models\Nurse;
+use App\Models\Psychiatrist;
+use App\Models\DoctorNote;
+use App\Models\StaffSchedule;
+use App\Models\Bed;
+use App\Models\Ward;
+use App\Models\Discharge;
+use App\Models\VitalSign;
+use App\Models\Allergy;
+use App\Models\Immunization;
+use App\Models\BillingStatement;
+
 
 
 
@@ -44,25 +66,86 @@ class DashboardController extends Controller
     {
         // Core metrics
         $patientCount = Patient::count();
-        $staffCount = User::whereIn('role', ['nurse', 'psychiatrist'])->count();
+        $staffCount = User::whereIn('role', ['nurse', 'psychiatrist', 'doctor'])->count();
         $pendingTasks = Task::where('status', 'pending')->count();
         $criticalIncidents = IncidentReport::where('description', 'like', '%critical%')->count();
     
-        // Role & permission data
+        // Patients
+        $recentPatients = Patient::latest()->take(5)->get(); // last 5 registered
+        $activePatients = Patient::where('status', 'active')->count();
+    
+        // Staff
+        $recentStaff = User::whereIn('role', ['nurse', 'psychiatrist', 'doctor'])
+                            ->latest()
+                            ->take(5)
+                            ->get();
+    
+        // Appointments
+        $upcomingAppointments = Appointment::whereDate('date', '>=', now())
+                                            ->orderBy('date', 'asc')
+                                            ->take(5)
+                                            ->get();
+                                            
+        $todayAppointments = Appointment::whereDate('date', today())->count();
+    
+        // Medications / Prescriptions
+        $activePrescriptions = Prescription::where('status', 'active')->count();
+        $lowStockMedications = Medication::where('quantity', '<=', 10)->get();
+    
+        // Incidents
+        $recentIncidents = IncidentReport::latest()->take(5)->get();
+    
+        // Billing & Payments
+        $unpaidInvoices = Invoice::where('status', 'unpaid')->count();
+        $recentPayments = Payment::latest()->take(5)->get();
+    
+        // Notifications & Alerts
+        $unreadNotifications = Notification::whereNull('read')->count();
+        $recentNotifications = Notification::latest()->take(5)->get();
+
+        $therapySessionCount = TherapySession::count();
+
+        $evaluationCount = Evaluation::count();
+
+        $progressReportCount = ProgressReport::count();
+
+        $dischargeCount = Discharge::count();
+
+        $billingCount = BillingStatement::count();
+    
+        // Roles & permissions
         $roles = Role::all();
         $permissions = Permission::all();
         $users = User::with('roles', 'permissions')->get();
     
         return view('admin.dashboard', compact(
             'patientCount',
+            'activePatients',
+            'recentPatients',
             'staffCount',
+            'recentStaff',
             'pendingTasks',
             'criticalIncidents',
+            'recentIncidents',
+            'upcomingAppointments',
+            'todayAppointments',
+            'activePrescriptions',
+            'lowStockMedications',
+            'unpaidInvoices',
+            'recentPayments',
+            'unreadNotifications',
+            'recentNotifications',
+            'therapySessionCount',
+            'evaluationCount',
+            'progressReportCount',
+            'dischargeCount',
+            'billingCount',
             'roles',
             'permissions',
             'users'
         ));
     }
+    
 
     protected function psychiatristDashboard()
     {
