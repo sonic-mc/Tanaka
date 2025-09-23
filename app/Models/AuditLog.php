@@ -8,6 +8,8 @@ class AuditLog extends Model
 {
     public $timestamps = false;
 
+    
+
     protected $fillable = [
         'user_id', 'action', 'description', 'timestamp'
     ];
@@ -16,4 +18,6 @@ class AuditLog extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    
 }

@@ -18,6 +18,7 @@ use App\Http\Controllers\BackupController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TherapySessionController;
 use App\Http\Controllers\IncidentController;
+use App\Http\Controllers\UserController;
 
 
 // Homepage
@@ -71,4 +72,38 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::post('permissions', [DashboardController::class, 'storePermission'])->name('admin.permissions.store');
     Route::post('roles/assign-permissions', [DashboardController::class, 'assignPermissions'])->name('admin.roles.assign-permissions');
     Route::post('users/assign-role', [DashboardController::class, 'assignRole'])->name('admin.users.assign-role');
+});
+
+
+
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    // Main user management dashboard
+    Route::get('users', [UserController::class, 'index'])->name('users.index');
+
+    // Create user
+    Route::post('users', [UserController::class, 'store'])->name('users.store');
+
+    // Edit user
+    Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+    Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
+
+    // Delete user
+    Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+
+    // Deactivate user
+    Route::post('users/deactivate', [UserController::class, 'deactivate'])->name('users.deactivate');
+
+    // Update role
+    Route::post('users/update-role', [UserController::class, 'updateRole'])->name('users.updateRole');
+
+    // Reset password
+    Route::post('users/reset-password', [UserController::class, 'resetPassword'])->name('users.resetPassword');
+
+    // Audit logs
+    Route::get('users/audit-logs', [UserController::class, 'auditLogs'])->name('users.auditLogs');
+});
+
+
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('logs', [AuditLogController::class, 'index'])->name('logs.index');
 });
