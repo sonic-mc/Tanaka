@@ -7,9 +7,14 @@ use App\Models\UserLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use App\Traits\AuditLogger;
+
 
 class UserController extends Controller
 {
+
+    use AuditLogger;
+    
     public function index(Request $request)
     {
         $query = User::query();

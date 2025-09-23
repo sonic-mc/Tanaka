@@ -9,10 +9,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use App\Traits\AuditLogger;
 
 
 class PatientController extends Controller
 {
+
+    use AuditLogger;
+    
     public function index(Request $request)
     {
         $user = Auth::user();

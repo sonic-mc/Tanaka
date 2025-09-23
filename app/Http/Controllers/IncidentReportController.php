@@ -9,11 +9,14 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Traits\AuditLogger;
 
 
 
 class IncidentReportController extends Controller
 {
+
+    use AuditLogger;
 
     public function index(Request $request)
     {

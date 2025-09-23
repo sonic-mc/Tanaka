@@ -36,13 +36,15 @@ use App\Models\BillingStatement;
 use App\Models\MedicalHistory;
 use App\Models\LabResult;
 use App\Models\RadiologyReport;
-
-
+use App\Traits\AuditLogger;
 
 
 
 class DashboardController extends Controller
 {
+
+    use AuditLogger;
+    
     public function index()
     {
         $user = Auth::user();

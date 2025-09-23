@@ -106,4 +106,5 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('logs', [AuditLogController::class, 'index'])->name('logs.index');
+    Route::get('logs/export', [AuditLogExportController::class, 'export'])->name('logs.export');
 });

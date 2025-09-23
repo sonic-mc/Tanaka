@@ -6,9 +6,12 @@ use App\Models\ProgressReport;
 use App\Models\Patient;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Traits\AuditLogger;
 
 class ProgressReportController extends Controller
 {
+
+    use AuditLogger;
     /**
      * Display a listing of the resource.
      */

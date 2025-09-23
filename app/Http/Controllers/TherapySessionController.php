@@ -8,11 +8,15 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
+use App\Traits\AuditLogger;
 
 
 
 class TherapySessionController extends Controller
 {
+
+    use AuditLogger;
     // List all sessions
     public function index()
     {

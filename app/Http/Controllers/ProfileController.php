@@ -8,9 +8,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
+use App\Traits\AuditLogger;
 
 class ProfileController extends Controller
 {
+    use AuditLogger;
     
     public function show(Request $request): View
     {

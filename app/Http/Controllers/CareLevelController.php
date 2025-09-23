@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Traits\AuditLogger;
 
 class CareLevelController extends Controller
 {
+
+    use AuditLogger;
     /**
      * Display a listing of the resource.
      */

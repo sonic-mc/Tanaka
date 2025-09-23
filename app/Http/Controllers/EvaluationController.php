@@ -5,10 +5,13 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\Evaluation;
+use App\Traits\AuditLogger;
 
 
 class EvaluationController extends Controller
 {
+
+    use AuditLogger;
     /**
      * Display a listing of the resource.
      */
