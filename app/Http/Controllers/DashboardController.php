@@ -165,11 +165,40 @@ class DashboardController extends Controller
             $q->where('evaluated_by', Auth::id());
         })->count();
 
+        $patientCount = Patient::count();
+        $therapySessionCount = TherapySession::count();
+        $evaluationCount = Evaluation::count();
+
+        $progressReportCount = ProgressReport::count();
+
+        $dischargeCount = Discharge::count();
+
+        $billingCount = BillingStatement::count();
+
+        $paymentCount = Payment::count();
+
+        $notificationCount = Auth::user()->unreadNotifications()->count();
+
         $upcomingEvaluations = \App\Models\Evaluation::where('evaluated_by', Auth::id())
             ->whereDate('created_at', '>=', now()->subDays(7))
             ->count();
 
-        return view('psychiatrist.dashboard', compact('assignedPatients', 'upcomingEvaluations'));
+        $incidentsCount = IncidentReport::count();
+        // $criticalIncidents = IncidentReport::where('severity', 'critical')->count();
+
+        return view('psychiatrist.dashboard', compact('assignedPatients',
+         'upcomingEvaluations',
+          'patientCount',
+           'therapySessionCount',
+            'evaluationCount',
+            'progressReportCount',
+            'dischargeCount',
+             'billingCount',
+              'paymentCount',
+                'incidentsCount',
+                    // 'criticalIncidents',
+               'notificationCount'
+            ));
     }
 
     protected function nurseDashboard()

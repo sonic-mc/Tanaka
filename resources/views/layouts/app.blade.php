@@ -168,19 +168,44 @@
         @endif
 
         @if(auth()->user()->hasRole('psychiatrist'))
-            <li class="nav-item"><a href="#" class="nav-link"><i class="bi bi-lightbulb-fill me-2"></i> Decision Support</a></li>
-        @endif
-
-        @if(auth()->user()->hasAnyRole(['psychiatrist','nurse']))
-            <li class="nav-item"><a href="#" class="nav-link"><i class="bi bi-file-earmark-text-fill me-2"></i> Reports</a></li>
-        @endif
-
-        @if(auth()->user()->hasRole('admin'))
-            <li class="nav-item"><a href="{{ route('admin.users.index')}}" class="nav-link"><i class="bi bi-people-fill me-2"></i> User Management</a></li>
-            <li class="nav-item"><a href="{{ route('admin.logs.index')}}" class="nav-link"><i class="bi bi-journal-text me-2"></i> System Activity Logs</a></li>
-            <li class="nav-item"><a href="{{ route ('admin.backups.index')}}" class="nav-link"><i class="bi bi-cloud-arrow-down-fill me-2"></i> Data Backup & Restore</a></li>
-            <li class="nav-item"><a href="{{ route('admin.billing.index')}}" class="nav-link"><i class="bi bi-credit-card-2-front-fill me-2"></i> Billing & Payments</a></li>
-        @endif
+        <li class="nav-item">
+            <a href="#" class="nav-link {{ request()->is('decision-support*') ? 'active' : '' }}">
+                <i class="bi bi-lightbulb-fill me-2"></i> Decision Support
+            </a>
+        </li>
+    @endif
+    
+    @if(auth()->user()->hasAnyRole(['psychiatrist','nurse']))
+        <li class="nav-item">
+            <a href="#" class="nav-link {{ request()->is('reports*') ? 'active' : '' }}">
+                <i class="bi bi-file-earmark-text-fill me-2"></i> Reports
+            </a>
+        </li>
+    @endif
+    
+    @if(auth()->user()->hasRole('admin'))
+        <li class="nav-item">
+            <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+                <i class="bi bi-people-fill me-2"></i> User Management
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.logs.index') }}" class="nav-link {{ request()->routeIs('admin.logs.*') ? 'active' : '' }}">
+                <i class="bi bi-journal-text me-2"></i> System Activity Logs
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.backups.index') }}" class="nav-link {{ request()->routeIs('admin.backups.*') ? 'active' : '' }}">
+                <i class="bi bi-cloud-arrow-down-fill me-2"></i> Data Backup & Restore
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('admin.billing.index') }}" class="nav-link {{ request()->routeIs('admin.billing.*') ? 'active' : '' }}">
+                <i class="bi bi-credit-card-2-front-fill me-2"></i> Billing & Payments
+            </a>
+        </li>
+    @endif
+    
     </ul>
 </nav>
 
