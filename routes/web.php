@@ -108,3 +108,17 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('logs', [AuditLogController::class, 'index'])->name('logs.index');
     Route::get('logs/export', [AuditLogExportController::class, 'export'])->name('logs.export');
 });
+
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('backups', [BackupController::class, 'index'])->name('backups.index');
+    Route::post('backups', [BackupController::class, 'store'])->name('backups.store');
+    Route::post('backups/{id}/restore', [BackupController::class, 'restore'])->name('backups.restore');
+});
+
+
+Route::middleware(['auth', 'role:admin|finance'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('billing', [BillingStatementController::class, 'index'])->name('billing.index');
+    Route::get('billing/{invoice}', [BillingStatementController::class, 'show'])->name('billing.show');
+    Route::post('billing/{invoice}/pay', [PaymentController::class, 'store'])->name('billing.pay');
+});
+

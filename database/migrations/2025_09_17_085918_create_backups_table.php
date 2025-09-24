@@ -12,10 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('backups', function (Blueprint $table) {
-            $table->id();
-            $table->string('file_path');
-            $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
-            $table->timestamp('created_at')->useCurrent();
+        $table->id();
+    
+        $table->string('file_path'); // Full path or relative reference
+        $table->string('filename')->nullable(); // Optional filename for display
+        $table->enum('type', ['database', 'files', 'full'])->default('full'); // Backup scope
+        $table->enum('status', ['pending', 'completed', 'failed', 'restored'])->default('pending'); // Lifecycle state
+        $table->text('notes')->nullable(); // Optional admin notes or context
+    
+        $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null'); // Creator
+        $table->timestamp('created_at')->useCurrent(); // Creation timestamp
+        $table->timestamp('restored_at')->nullable(); // If restored, when
+    
+        $table->ipAddress('origin_ip')->nullable(); // Who triggered it
         });
     }
     

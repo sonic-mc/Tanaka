@@ -12,6 +12,12 @@ class Backup extends Model
         'file_path', 'created_by', 'created_at'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'restored_at' => 'datetime',
+    ];
+    
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
