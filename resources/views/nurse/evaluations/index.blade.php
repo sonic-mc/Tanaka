@@ -37,6 +37,9 @@
                         <th>Risk Level</th>
                         <th>Notes</th>
                         <th>Scores</th>
+                        @if(auth()->user()->hasRole('psychiatrist'))
+                            <th>Actions</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody>
@@ -66,12 +69,28 @@
                                 —
                             @endif
                         </td>
+    
+                        @if(auth()->user()->hasRole('psychiatrist'))
+                        <td>
+                            <a href="{{ route('evaluations.edit', $eval->id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i> Edit
+                            </a>
+                            <form action="{{ route('evaluations.destroy', $eval->id) }}" method="POST" class="d-inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this evaluation?')">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </form>
+                        </td>
+                        @endif
                     </tr>
                     @endforeach
                 </tbody>
             </table>
         @endif
     </div>
+    
 
     {{-- Tab: Conduct New Evaluation (Psychiatrists only) --}}
     @if(auth()->user()->hasRole('psychiatrist'))
