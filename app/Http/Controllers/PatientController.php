@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use App\Traits\AuditLogger;
+use App\Models\AuditLog;
+
 
 
 class PatientController extends Controller
@@ -52,7 +54,37 @@ class PatientController extends Controller
             ->with('careLevel')
             ->get();
 
-        return view('nurse.patients.index', compact('assignedPatients', 'allPatients', 'careLevels'));
+            
+        $nurseId = auth()->id();
+
+        $nurseAssignedPatients = Patient::with(['careLevel', 'assignedNurse'])
+        ->whereNotNull('assigned_nurse_id')
+        ->when($request->filled('nurse_search'), fn($q) =>
+            $q->where(function ($query) use ($request) {
+                $query->where('first_name', 'like', '%' . $request->nurse_search . '%')
+                      ->orWhere('last_name', 'like', '%' . $request->nurse_search . '%')
+                      ->orWhere('patient_code', 'like', '%' . $request->nurse_search . '%');
+            })
+        )
+        ->when($request->filled('nurse_status'), fn($q) => $q->where('status', $request->nurse_status))
+        ->when($request->filled('nurse_gender'), fn($q) => $q->where('gender', $request->nurse_gender))
+        ->when($request->filled('nurse_care_level'), fn($q) => $q->where('current_care_level_id', $request->nurse_care_level))
+        ->orderBy('last_name')
+        ->get();
+    
+
+        $unassignedPatients = Patient::whereNull('assigned_nurse_id')
+            ->with('careLevel')
+            ->get();
+
+         // Nurses list
+         $nurses = User::query()->role('nurse')->get();
+        
+
+
+      
+
+        return view('nurse.patients.index', compact('assignedPatients', 'allPatients', 'careLevels', 'nurseAssignedPatients', 'unassignedPatients', 'nurses'));
     }
 
     public function create()
@@ -98,7 +130,10 @@ class PatientController extends Controller
         $patient = Patient::findOrFail($id);
         $careLevels = CareLevel::all();
         $staff = User::whereIn('role', ['admin', 'psychiatrist', 'nurse'])->get();
-        return view('admin.patients.edit', compact('patient', 'careLevels', 'staff'));
+        // Nurses list
+        $nurses = User::query()->role('nurse')->get();
+
+        return view('admin.patients.edit', compact('patient', 'careLevels', 'staff', 'nurses'));
     }
 
     public function update(Request $request, $id)
@@ -132,4 +167,33 @@ class PatientController extends Controller
 
         return redirect()->route('patients.index')->with('success', 'Patient record deleted.');
     }
+
+    public function assignNurse(Request $request, Patient $patient)
+    {
+        $request->validate([
+            'nurse_id' => 'nullable|exists:users,id',
+        ]);
+
+        $patient->assigned_nurse_id = $request->nurse_id;
+        $patient->save();
+
+        AuditLog::log(
+            'Assigned nurse to patient',
+            "Patient {$patient->patient_code} assigned to nurse ID {$request->nurse_id}",
+            'patients',
+            'info'
+        );
+
+        return back()->with('success', 'Nurse assignment updated.');
+    }
+
+
+    public function discharge(Patient $patient)
+    {
+        $patient->status = 'discharged';
+        $patient->save();
+
+        return redirect()->route('patients.show', $patient)->with('success', 'Patient discharged successfully.');
+    }
+
 }

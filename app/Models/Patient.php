@@ -58,6 +58,12 @@ class Patient extends Model
     {
         return "{$this->first_name} {$this->last_name}";
     }
+
+    public function assignedNurse()
+{
+    return $this->belongsTo(User::class, 'assigned_nurse_id');
+}
+
     
 
 }

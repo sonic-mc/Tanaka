@@ -22,6 +22,7 @@ return new class extends Migration
             $table->date('admission_date');
             $table->text('admission_reason')->nullable();
             $table->foreignId('admitted_by')->constrained('users')->onDelete('cascade');
+            $table->foreignId('assigned_nurse_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('room_number')->nullable();
             $table->enum('status', ['active', 'discharged'])->default('active');
             $table->foreignId('current_care_level_id')->nullable()->constrained('care_levels')->nullOnDelete();

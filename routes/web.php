@@ -122,3 +122,8 @@ Route::middleware(['auth', 'role:admin|finance'])->prefix('admin')->name('admin.
     Route::post('billing/{invoice}/pay', [PaymentController::class, 'store'])->name('billing.pay');
 });
 
+Route::post('patients/{patient}/assign-nurse', [PatientController::class, 'assignNurse'])->name('patients.assign-nurse');
+
+Route::get('patients/{patient}/admit', [PatientController::class, 'admit'])->name('patients.admit');
+Route::get('patients/{patient}/discharge', [PatientController::class, 'discharge'])->name('patients.discharge');
+
