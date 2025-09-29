@@ -19,6 +19,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TherapySessionController;
 use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ReportController;
 
 
 // Homepage
@@ -106,7 +107,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('logs', [AuditLogController::class, 'index'])->name('logs.index');
-    Route::get('logs/export', [AuditLogExportController::class, 'export'])->name('logs.export');
+    Route::get('logs/export', [AuditLogController::class, 'export'])->name('logs.export');
 });
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -127,3 +128,7 @@ Route::post('patients/{patient}/assign-nurse', [PatientController::class, 'assig
 Route::get('patients/{patient}/admit', [PatientController::class, 'admit'])->name('patients.admit');
 Route::get('patients/{patient}/discharge', [PatientController::class, 'discharge'])->name('patients.discharge');
 
+Route::middleware(['auth', 'role:psychiatrist'])->group(function () {
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::post('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+});

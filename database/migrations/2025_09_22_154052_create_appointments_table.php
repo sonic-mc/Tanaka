@@ -10,7 +10,8 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-    {Schema::create('appointments', function (Blueprint $table) {
+    {
+        Schema::create('appointments', function (Blueprint $table) {
         $table->id();
     
         // Relationships

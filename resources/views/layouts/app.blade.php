@@ -164,20 +164,20 @@
             <li class="nav-item"><a href="{{ route('progress-reports.index') }}" class="nav-link {{ isActive('progress-reports*') }}"><i class="bi bi-bar-chart-line-fill me-2"></i> Progress Monitoring</a></li>
             <li class="nav-item"><a href="{{ route('therapy-sessions.index') }}" class="nav-link {{ isActive('therapy-sessions*') }}"><i class="bi bi-calendar-check me-2"></i> Therapy Sessions</a></li>
             <li class="nav-item"><a href="{{ route('incidents.index') }}" class="nav-link {{ isActive('incidents*') }}"><i class="bi bi-exclamation-triangle me-2"></i> Incidents</a></li>
-            <li class="nav-item"><a href="{{ route('notifications.index') }}" class="nav-link {{ isActive('notifications*') }}"><i class="bi bi-bell me-2"></i> Notifications</a></li>
+            {{-- <li class="nav-item"><a href="{{ route('notifications.index') }}" class="nav-link {{ isActive('notifications*') }}"><i class="bi bi-bell me-2"></i> Notifications</a></li> --}}
         @endif
 
         @if(auth()->user()->hasRole('psychiatrist'))
         <li class="nav-item">
-            <a href="#" class="nav-link {{ request()->is('decision-support*') ? 'active' : '' }}">
+            {{-- <a href="#" class="nav-link {{ request()->is('decision-support*') ? 'active' : '' }}">
                 <i class="bi bi-lightbulb-fill me-2"></i> Decision Support
-            </a>
+            </a> --}}
         </li>
     @endif
     
     @if(auth()->user()->hasAnyRole(['psychiatrist','nurse']))
         <li class="nav-item">
-            <a href="#" class="nav-link {{ request()->is('reports*') ? 'active' : '' }}">
+            <a href="{{ route('reports.index')}}" class="nav-link {{ request()->is('reports*') ? 'active' : '' }}">
                 <i class="bi bi-file-earmark-text-fill me-2"></i> Reports
             </a>
         </li>
