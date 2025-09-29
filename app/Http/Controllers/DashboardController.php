@@ -205,7 +205,7 @@ class DashboardController extends Controller
     {
         $assignedPatients = \App\Models\Patient::where('status', 'active')->count();
         
-        $patientsCount = Patient::count();
+        $patientsCount = $patientsCount = Auth::user()->assignedPatients()->count();
 
         $today = now()->toDateString();
         // $appointmentsCount = Appointment::whereDate('date', $today)->count();

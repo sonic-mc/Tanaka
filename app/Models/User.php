@@ -34,6 +34,13 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\IncidentReport::class, 'reported_by');
     }
 
+    public function assignedPatients()
+{
+    return $this->hasMany(Patient::class, 'assigned_nurse_id');
+}
+
+
+
 
 
     /**

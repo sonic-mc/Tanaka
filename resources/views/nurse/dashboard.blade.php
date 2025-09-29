@@ -32,7 +32,7 @@
                         {{ $greeting }}, {{ Auth::user()->name }}
                     </h2>
                     <p class="text-muted">
-                        You have <span class="text-danger fw-bold">{{ $patientsCount ?? 0 }} Patients</span> today
+                        You have <span class="text-danger fw-bold">{{ $patientsCount ?? 0 }} Patients</span> assigned to you today
                     </p>
                 </div>
             

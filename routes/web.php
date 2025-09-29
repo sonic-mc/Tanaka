@@ -128,7 +128,7 @@ Route::post('patients/{patient}/assign-nurse', [PatientController::class, 'assig
 Route::get('patients/{patient}/admit', [PatientController::class, 'admit'])->name('patients.admit');
 Route::get('patients/{patient}/discharge', [PatientController::class, 'discharge'])->name('patients.discharge');
 
-Route::middleware(['auth', 'role:psychiatrist'])->group(function () {
+Route::middleware(['auth', 'role:psychiatrist|nurse'])->group(function () {
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::post('/reports/export', [ReportController::class, 'export'])->name('reports.export');
 });
