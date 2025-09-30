@@ -26,8 +26,16 @@ return new class extends Migration
             $table->string('room_number')->nullable();
             $table->enum('status', ['active', 'discharged'])->default('active');
             $table->foreignId('current_care_level_id')->nullable()->constrained('care_levels')->nullOnDelete();
+        
+            // ✅ Next of Kin Details
+            $table->string('next_of_kin_name')->nullable();
+            $table->string('next_of_kin_relationship')->nullable();
+            $table->string('next_of_kin_contact_number')->nullable();
+            $table->string('next_of_kin_email')->nullable();
+        
             $table->timestamps();
         });
+        
     }
     
 

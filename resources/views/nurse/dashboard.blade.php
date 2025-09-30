@@ -45,9 +45,15 @@
                         <h4 class="fw-bold mb-2">Patient Care Overview</h4>
                         <p class="mb-0 text-muted">Monitor and track patient progress, incidents, and therapy attendance</p>
                     </div>
-                    <div style="font-size: 70px;">👩‍⚕️</div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="font-size: 70px;">👩‍⚕️</div>
+                        <a href="{{ route('admissions.create') }}" class="btn btn-primary btn-lg">
+                            <i class="bi bi-person-plus me-1"></i> Admit Patient
+                        </a>
+                    </div>
                 </div>
             </div>
+            
 
             <!-- Stats Row -->
             <div class="row g-3 mb-4">

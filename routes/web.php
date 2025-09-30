@@ -20,6 +20,7 @@ use App\Http\Controllers\TherapySessionController;
 use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\AdmissionController;
 
 
 // Homepage
@@ -132,3 +133,11 @@ Route::middleware(['auth', 'role:psychiatrist|nurse'])->group(function () {
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::post('/reports/export', [ReportController::class, 'export'])->name('reports.export');
 });
+
+
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/admissions/create', [AdmissionController::class, 'create'])->name('admissions.create');
+    Route::post('/admissions', [AdmissionController::class, 'store'])->name('admissions.store');
+});
+
