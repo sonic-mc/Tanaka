@@ -63,6 +63,8 @@ class IncidentReportController extends Controller
             ->with('patient')
             ->orderByDesc('count')
             ->get();
+
+        
     
         return view('nurse.incidents.index', compact(
             'reports',

@@ -58,6 +58,15 @@
                 <input type="hidden" name="modules[]" value="{{ $module }}">
             @endforeach
             <input type="hidden" name="patient_id" value="{{ request('patient_id') }}">
+
+            @if(request('patient_id'))
+                <p class="mb-2">
+                    Exporting reports for: 
+                    {{ \App\Models\Patient::find(request('patient_id'))->first_name ?? '' }} 
+                    {{ \App\Models\Patient::find(request('patient_id'))->last_name ?? '' }}
+                </p>
+            @endif
+
             <button class="btn btn-outline-danger">
                 <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
             </button>
@@ -70,7 +79,6 @@
                     {{ ucwords(str_replace('_', ' ', $key)) }}
                 </div>
                 <div class="card-body">
-
                     @if($items instanceof \Illuminate\Support\Collection && $items->isNotEmpty())
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover align-middle">
@@ -84,12 +92,44 @@
                                 <tbody>
                                     @foreach($items as $row)
                                         <tr>
-                                            @foreach($row->getAttributes() as $val)
+                                            @foreach(array_keys($row->getAttributes()) as $col)
+                                                @php
+                                                    $val = $row->$col;
+
+                                                    // Relationship substitutions
+                                                    if($col === 'patient_id' && isset($row->patient)) {
+                                                        $val = $row->patient->first_name . ' ' . $row->patient->last_name;
+                                                    }
+                                                    if($col === 'evaluated_by' && isset($row->evaluator)) {
+                                                        $val = $row->evaluator->name;
+                                                    }
+                                                    if($col === 'admitted_by' && isset($row->admittedBy)) {
+                                                        $val = $row->admittedBy->name;
+                                                    }
+                                                    if($col === 'assigned_nurse_id' && isset($row->assignedNurse)) {
+                                                        $val = $row->assignedNurse->name;
+                                                    }
+                                                    if($col === 'current_care_level_id' && isset($row->careLevel)) {
+                                                        $val = $row->careLevel->name;
+                                                    }
+                                                    if($col === 'reported_by' && isset($row->reporter)) {
+                                                        $val = $row->reporter->name;
+                                                    }
+
+                                                    // Format timestamps
+                                                    if(str_contains($col, 'created_at') || str_contains($col, 'updated_at') || str_contains($col, 'date')) {
+                                                        try {
+                                                            $val = \Carbon\Carbon::parse($val)->format('d M Y H:i');
+                                                        } catch (\Exception $e) {
+                                                            // leave as-is if not parsable
+                                                        }
+                                                    }
+                                                @endphp
                                                 <td>
                                                     @if(is_array($val) || is_object($val))
                                                         <pre class="m-0 small">{{ json_encode($val) }}</pre>
                                                     @else
-                                                        {{ $val }}
+                                                        {{ $val ?: '—' }}
                                                     @endif
                                                 </td>
                                             @endforeach

@@ -19,5 +19,10 @@ class IncidentReport extends Model
     {
         return $this->belongsTo(User::class, 'reported_by');
     }
+
+    public function reportedBy()
+    {
+        return $this->belongsTo(User::class, 'reported_by'); // 'reported_by' is the foreign key in incident_reports table
+    }
 }
 

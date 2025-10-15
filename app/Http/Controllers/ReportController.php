@@ -30,88 +30,88 @@ class ReportController extends Controller
         $modules = $request->input('modules', []);
         $patientId = $request->input('patient_id');
         $data = [];
-
+    
         // Fetch per patient if selected
         if ($patientId) {
-            $patient = Patient::findOrFail($patientId);
-
+            $patient = Patient::with(['admittedBy', 'assignedNurse', 'careLevel'])->findOrFail($patientId);
+    
             if (in_array('patients', $modules)) {
                 $data['patient'] = $patient;
             }
             if (in_array('discharges', $modules)) {
-                $data['discharges'] = Discharge::where('patient_id', $patientId)->get();
+                $data['discharges'] = Discharge::with('patient')->where('patient_id', $patientId)->get();
             }
             if (in_array('evaluations', $modules)) {
-                $data['evaluations'] = Evaluation::where('patient_id', $patientId)->get();
+                $data['evaluations'] = Evaluation::with('patient', 'evaluator')->where('patient_id', $patientId)->get();
             }
             if (in_array('incident_reports', $modules)) {
-                $data['incident_reports'] = IncidentReport::where('patient_id', $patientId)->get();
+                $data['incident_reports'] = IncidentReport::with('patient')->where('patient_id', $patientId)->get();
             }
             if (in_array('progress_reports', $modules)) {
-                $data['progress_reports'] = ProgressReport::where('patient_id', $patientId)->get();
+                $data['progress_reports'] = ProgressReport::with('patient')->where('patient_id', $patientId)->get();
             }
             if (in_array('billing_statements', $modules)) {
-                $data['billing_statements'] = BillingStatement::where('patient_id', $patientId)->get();
+                $data['billing_statements'] = BillingStatement::with('patient')->where('patient_id', $patientId)->get();
             }
             if (in_array('therapy_sessions', $modules)) {
-                $data['therapy_sessions'] = TherapySession::where('patient_id', $patientId)->get();
+                $data['therapy_sessions'] = TherapySession::with('patient')->where('patient_id', $patientId)->get();
             }
             if (in_array('invoices', $modules)) {
-                $data['invoices'] = Invoice::where('patient_id', $patientId)->get();
+                $data['invoices'] = Invoice::with('patient')->where('patient_id', $patientId)->get();
             }
             if (in_array('payments', $modules)) {
-                $data['payments'] = Payment::where('patient_id', $patientId)->get();
+                $data['payments'] = Payment::with('patient')->where('patient_id', $patientId)->get();
             }
             if (in_array('prescriptions', $modules)) {
-                $data['prescriptions'] = Prescription::where('patient_id', $patientId)->get();
+                $data['prescriptions'] = Prescription::with('patient')->where('patient_id', $patientId)->get();
             }
             if (in_array('appointments', $modules)) {
-                $data['appointments'] = Appointment::where('patient_id', $patientId)->get();
+                $data['appointments'] = Appointment::with('patient')->where('patient_id', $patientId)->get();
             }
-
+    
         } else {
             // System-wide reports
             if (in_array('patients', $modules)) {
-                $data['patients'] = Patient::latest()->take(20)->get();
+                $data['patients'] = Patient::with(['admittedBy', 'assignedNurse', 'careLevel'])->latest()->take(20)->get();
             }
             if (in_array('discharges', $modules)) {
-                $data['discharges'] = Discharge::latest()->take(20)->get();
+                $data['discharges'] = Discharge::with('patient')->latest()->take(20)->get();
             }
             if (in_array('evaluations', $modules)) {
-                $data['evaluations'] = Evaluation::latest()->take(20)->get();
+                $data['evaluations'] = Evaluation::with('patient', 'evaluator')->latest()->take(20)->get();
             }
             if (in_array('incident_reports', $modules)) {
-                $data['incident_reports'] = IncidentReport::latest()->take(20)->get();
+                $data['incident_reports'] = IncidentReport::with('patient')->latest()->take(20)->get();
             }
             if (in_array('progress_reports', $modules)) {
-                $data['progress_reports'] = ProgressReport::latest()->take(20)->get();
+                $data['progress_reports'] = ProgressReport::with('patient')->latest()->take(20)->get();
             }
             if (in_array('billing_statements', $modules)) {
-                $data['billing_statements'] = BillingStatement::latest()->take(20)->get();
+                $data['billing_statements'] = BillingStatement::with('patient')->latest()->take(20)->get();
             }
             if (in_array('therapy_sessions', $modules)) {
-                $data['therapy_sessions'] = TherapySession::latest()->take(20)->get();
+                $data['therapy_sessions'] = TherapySession::with('patient')->latest()->take(20)->get();
             }
             if (in_array('medications', $modules)) {
                 $data['medications'] = Medication::latest()->take(20)->get();
             }
             if (in_array('invoices', $modules)) {
-                $data['invoices'] = Invoice::latest()->take(20)->get();
+                $data['invoices'] = Invoice::with('patient')->latest()->take(20)->get();
             }
             if (in_array('payments', $modules)) {
-                $data['payments'] = Payment::latest()->take(20)->get();
+                $data['payments'] = Payment::with('patient')->latest()->take(20)->get();
             }
             if (in_array('prescriptions', $modules)) {
-                $data['prescriptions'] = Prescription::latest()->take(20)->get();
+                $data['prescriptions'] = Prescription::with('patient')->latest()->take(20)->get();
             }
             if (in_array('appointments', $modules)) {
-                $data['appointments'] = Appointment::latest()->take(20)->get();
+                $data['appointments'] = Appointment::with('patient')->latest()->take(20)->get();
             }
         }
-
+    
         return view('reports.index', compact('data', 'modules', 'patientId'));
     }
-
+    
     /**
      * Export reports as PDF.
      */
@@ -120,14 +120,85 @@ class ReportController extends Controller
         $modules = $request->input('modules', []);
         $patientId = $request->input('patient_id');
         $data = [];
-
-        // reuse same logic from index
-        $request->merge(['modules' => $modules, 'patient_id' => $patientId]);
-        $data = $this->index($request)->getData()['data'];
-
-        $pdf = Pdf::loadView('reports.pdf', compact('data', 'modules', 'patientId'))
-                  ->setPaper('a4', 'landscape');
-
-        return $pdf->download('reports.pdf');
+    
+        if ($patientId) {
+            $patient = Patient::with(['admittedBy', 'assignedNurse', 'careLevel'])->findOrFail($patientId);
+    
+            if (in_array('patients', $modules)) {
+                $data['patient'] = $patient;
+            }
+            if (in_array('discharges', $modules)) {
+                $data['discharges'] = Discharge::with('patient')->where('patient_id', $patientId)->get();
+            }
+            if (in_array('evaluations', $modules)) {
+                $data['evaluations'] = Evaluation::with('patient', 'evaluator')->where('patient_id', $patientId)->get();
+            }
+            if (in_array('incident_reports', $modules)) {
+                $data['incident_reports'] = IncidentReport::with('patient')->where('patient_id', $patientId)->get();
+            }
+            if (in_array('progress_reports', $modules)) {
+                $data['progress_reports'] = ProgressReport::with('patient')->where('patient_id', $patientId)->get();
+            }
+            if (in_array('billing_statements', $modules)) {
+                $data['billing_statements'] = BillingStatement::with('patient')->where('patient_id', $patientId)->get();
+            }
+            if (in_array('therapy_sessions', $modules)) {
+                $data['therapy_sessions'] = TherapySession::with('patient')->where('patient_id', $patientId)->get();
+            }
+            if (in_array('invoices', $modules)) {
+                $data['invoices'] = Invoice::with('patient')->where('patient_id', $patientId)->get();
+            }
+            if (in_array('payments', $modules)) {
+                $data['payments'] = Payment::with('patient')->where('patient_id', $patientId)->get();
+            }
+            if (in_array('prescriptions', $modules)) {
+                $data['prescriptions'] = Prescription::with('patient')->where('patient_id', $patientId)->get();
+            }
+            if (in_array('appointments', $modules)) {
+                $data['appointments'] = Appointment::with('patient')->where('patient_id', $patientId)->get();
+            }
+    
+        } else {
+            if (in_array('patients', $modules)) {
+                $data['patients'] = Patient::with(['admittedBy', 'assignedNurse', 'careLevel'])->latest()->take(20)->get();
+            }
+            if (in_array('discharges', $modules)) {
+                $data['discharges'] = Discharge::with('patient')->latest()->take(20)->get();
+            }
+            if (in_array('evaluations', $modules)) {
+                $data['evaluations'] = Evaluation::with('patient', 'evaluator')->latest()->take(20)->get();
+            }
+            if (in_array('incident_reports', $modules)) {
+                $data['incident_reports'] = IncidentReport::with('patient')->latest()->take(20)->get();
+            }
+            if (in_array('progress_reports', $modules)) {
+                $data['progress_reports'] = ProgressReport::with('patient')->latest()->take(20)->get();
+            }
+            if (in_array('billing_statements', $modules)) {
+                $data['billing_statements'] = BillingStatement::with('patient')->latest()->take(20)->get();
+            }
+            if (in_array('therapy_sessions', $modules)) {
+                $data['therapy_sessions'] = TherapySession::with('patient')->latest()->take(20)->get();
+            }
+            if (in_array('medications', $modules)) {
+                $data['medications'] = Medication::latest()->take(20)->get();
+            }
+            if (in_array('invoices', $modules)) {
+                $data['invoices'] = Invoice::with('patient')->latest()->take(20)->get();
+            }
+            if (in_array('payments', $modules)) {
+                $data['payments'] = Payment::with('patient')->latest()->take(20)->get();
+            }
+            if (in_array('prescriptions', $modules)) {
+                $data['prescriptions'] = Prescription::with('patient')->latest()->take(20)->get();
+            }
+            if (in_array('appointments', $modules)) {
+                $data['appointments'] = Appointment::with('patient')->latest()->take(20)->get();
+            }
+        }
+    
+        $pdf = Pdf::loadView('reports.pdf', compact('data', 'modules', 'patientId'));
+        return $pdf->download('report.pdf');
     }
+    
 }
