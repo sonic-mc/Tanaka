@@ -18,12 +18,19 @@ class UsersController extends Controller
         if (!auth()->user()->hasRole('admin')) {
             abort(403, 'Unauthorized access');
         }
+    
+        // Get users with no roles
+        $users = User::doesntHave('roles')->get();
+    
+        // Count users without roles
+        $noRoleCount = $users->count();
 
-        $users = User::with('roles')->get(); // eager load roles
-        $roles = Role::all(); // list all roles
-
-        return view('users.index', compact('users', 'roles'));
+         // Get all available roles
+        $roles = Role::all();
+    
+        return view('users.index', compact('users', 'noRoleCount', 'roles'));
     }
+    
 
     /**
      * Assign a role to a user.

@@ -207,7 +207,7 @@
         </li>
         <li class="nav-item">
             <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.index*') ? 'active' : '' }}">
-                <i class="bi bi-people me-2"></i> User Management
+                <i class="bi bi-people me-2"></i> User Role Assignemt
             </a>
         </li>
         

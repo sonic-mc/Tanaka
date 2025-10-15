@@ -122,6 +122,17 @@
 <!-- KPIs -->
 <div class="row mb-5">
     <div class="col-12">
+         {{-- Popup alert --}}
+            @if($noRoleCount > 0)
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <strong>{{ $noRoleCount }}</strong> user{{ $noRoleCount > 1 ? 's' : '' }} found without assigned roles.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @else
+            <div class="alert alert-success">
+                All users have roles assigned.
+            </div>
+        @endif
         <h3 class="section-title">Key Performance Indicators</h3>
         <p class="section-subtitle">Real-time overview of your healthcare facility metrics</p>
     </div>

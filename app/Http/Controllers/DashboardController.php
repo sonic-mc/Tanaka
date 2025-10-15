@@ -136,6 +136,12 @@ class DashboardController extends Controller
         $roles = Role::all();
         $permissions = Permission::all();
         $users = User::with('roles', 'permissions')->get();
+
+         // Get users with no roles
+         $users = User::doesntHave('roles')->get();
+    
+          // Count users without roles
+        $noRoleCount = $users->count();
     
         return view('admin.dashboard', compact(
             'patientCount',
@@ -163,7 +169,8 @@ class DashboardController extends Controller
             'notificationCount',
             'roles',
             'permissions',
-            'users'
+            'users',
+            'noRoleCount'
         ));
     }
     
