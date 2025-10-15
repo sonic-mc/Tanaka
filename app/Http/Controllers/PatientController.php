@@ -25,19 +25,20 @@ class PatientController extends Controller
         $careLevels = CareLevel::all();
 
         // Assigned patients
-        $assignedPatients = Patient::where('admitted_by', $user->id)
-            ->when($request->assigned_search, function ($query) use ($request) {
-                $query->where(function ($q) use ($request) {
-                    $q->where('first_name', 'like', '%' . $request->assigned_search . '%')
-                    ->orWhere('last_name', 'like', '%' . $request->assigned_search . '%')
-                    ->orWhere('patient_code', 'like', '%' . $request->assigned_search . '%');
-                });
-            })
-            ->when($request->assigned_status, fn($q) => $q->where('status', $request->assigned_status))
-            ->when($request->assigned_gender, fn($q) => $q->where('gender', $request->assigned_gender))
-            ->when($request->assigned_care_level, fn($q) => $q->where('current_care_level_id', $request->assigned_care_level))
-            ->with('careLevel')
-            ->get();
+        $assignedPatients = Patient::where('assigned_nurse_id', $user->id)
+        ->when($request->assigned_search, function ($query) use ($request) {
+            $query->where(function ($q) use ($request) {
+                $q->where('first_name', 'like', '%' . $request->assigned_search . '%')
+                  ->orWhere('last_name', 'like', '%' . $request->assigned_search . '%')
+                  ->orWhere('patient_code', 'like', '%' . $request->assigned_search . '%');
+            });
+        })
+        ->when($request->assigned_status, fn($q) => $q->where('status', $request->assigned_status))
+        ->when($request->assigned_gender, fn($q) => $q->where('gender', $request->assigned_gender))
+        ->when($request->assigned_care_level, fn($q) => $q->where('current_care_level_id', $request->assigned_care_level))
+        ->with('careLevel')
+        ->get();
+    
 
         // All patients
         $allPatients = Patient::query()

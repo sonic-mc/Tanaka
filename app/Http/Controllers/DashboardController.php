@@ -216,12 +216,10 @@ class DashboardController extends Controller
     
         // ✅ Count only patients assigned to this nurse
         $assignedPatients = \App\Models\Patient::where('assigned_nurse_id', $user->id)
-            ->where('status', 'active')
             ->count();
     
         // You can also use your relationship (same result, cleaner):
         $patientsCount = $user->assignedPatients()
-            ->where('status', 'active')
             ->count();
     
         $today = now()->toDateString();
