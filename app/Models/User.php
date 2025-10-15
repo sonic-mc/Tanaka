@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -10,7 +9,6 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles;
 
     /**
@@ -24,9 +22,16 @@ class User extends Authenticatable
         'password',
     ];
 
+    /**
+     * Relationships
+     */
+
+    // If you're using Spatie, you don't need this custom belongsTo Role,
+    // because roles are handled via the roles/permissions tables automatically.
+    // However, we’ll keep it safely for backward compatibility.
     public function role()
     {
-        return $this->belongsTo(Role::class);
+        return $this->belongsTo(\Spatie\Permission\Models\Role::class, 'role_id', 'id');
     }
 
     public function incidentReports()
@@ -35,13 +40,9 @@ class User extends Authenticatable
     }
 
     public function assignedPatients()
-{
-    return $this->hasMany(Patient::class, 'assigned_nurse_id');
-}
-
-
-
-
+    {
+        return $this->hasMany(\App\Models\Patient::class, 'assigned_nurse_id');
+    }
 
     /**
      * The attributes that should be hidden for serialization.
@@ -54,7 +55,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast.
      *
      * @return array<string, string>
      */
@@ -64,5 +65,21 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Helper: Check if user has admin privileges.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
+    }
+
+    /**
+     * Helper: Assign a role dynamically (wrapper for Spatie).
+     */
+    public function assignSystemRole(string $roleName): void
+    {
+        $this->syncRoles([$roleName]);
     }
 }

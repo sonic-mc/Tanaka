@@ -21,6 +21,7 @@ use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\AdmissionController;
+use App\Http\Controllers\UsersController;
 
 
 // Homepage
@@ -139,5 +140,11 @@ Route::middleware(['auth', 'role:psychiatrist|nurse'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/admissions/create', [AdmissionController::class, 'create'])->name('admissions.create');
     Route::post('/admissions', [AdmissionController::class, 'store'])->name('admissions.store');
+});
+
+
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/users', [UsersController::class, 'index'])->name('users.index');
+    Route::post('/users/{id}/assign-role', [UsersController::class, 'assignRole'])->name('users.assignRole');
 });
 

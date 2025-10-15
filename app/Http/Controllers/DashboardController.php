@@ -48,25 +48,34 @@ class DashboardController extends Controller
     public function index()
     {
         $user = Auth::user();
-
+    
         if (! $user) {
             return redirect()->route('login');
         }
-
-        switch ($user->role) {
+    
+        // Check if user has no assigned roles
+        if ($user->roles->isEmpty()) {
+            return $this->defaultDashboard();
+        }
+    
+        // Otherwise, get the user's primary role
+        $role = $user->roles->first()->name;
+    
+        switch ($role) {
             case 'admin':
                 return $this->adminDashboard();
-
+    
             case 'psychiatrist':
                 return $this->psychiatristDashboard();
-
+    
             case 'nurse':
                 return $this->nurseDashboard();
-
+    
             default:
                 return $this->defaultDashboard();
         }
     }
+    
 
     protected function adminDashboard()
     {

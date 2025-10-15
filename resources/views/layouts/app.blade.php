@@ -204,6 +204,11 @@
                 <i class="bi bi-credit-card-2-front-fill me-2"></i> Billing & Payments
             </a>
         </li>
+        <li class="nav-item">
+            <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.index.*') ? 'active' : '' }}">
+                <i class="bi bi-user-icon me-2"></i> User Management
+            </a>
+        </li>
     @endif
     
     </ul>
