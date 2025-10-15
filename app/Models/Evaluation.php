@@ -7,9 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 class Evaluation extends Model
 {
     protected $fillable = [
-        'patient_id', 'evaluator_id', 'evaluation_date',
-        'score', 'risk_level', 'notes'
+        'patient_id',
+        'evaluated_by',
+        'risk_level',
+        'notes',
+        'scores',
     ];
+
+    protected $casts = [
+        'scores' => 'array',
+    ];
+    
 
     public function patient()
     {

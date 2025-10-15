@@ -212,22 +212,40 @@ class DashboardController extends Controller
 
     protected function nurseDashboard()
     {
-        $assignedPatients = \App\Models\Patient::where('status', 'active')->count();
-        
-        $patientsCount = $patientsCount = Auth::user()->assignedPatients()->count();
-
+        $user = Auth::user();
+    
+        // ✅ Count only patients assigned to this nurse
+        $assignedPatients = \App\Models\Patient::where('assigned_nurse_id', $user->id)
+            ->where('status', 'active')
+            ->count();
+    
+        // You can also use your relationship (same result, cleaner):
+        $patientsCount = $user->assignedPatients()
+            ->where('status', 'active')
+            ->count();
+    
         $today = now()->toDateString();
-        // $appointmentsCount = Appointment::whereDate('date', $today)->count();
-
-        $reportsCount = ProgressReport::whereDate('created_at', $today)->count();
-
-       $incidentsCount = IncidentReport::count();
-        $pendingReports = \App\Models\ProgressReport::where('reported_by', Auth::id())
+    
+        $reportsCount = \App\Models\ProgressReport::whereDate('created_at', $today)
+            ->where('reported_by', $user->id)
+            ->count();
+    
+        $incidentsCount = \App\Models\IncidentReport::where('reported_by', $user->id)
+            ->count();
+    
+        $pendingReports = \App\Models\ProgressReport::where('reported_by', $user->id)
             ->whereDate('created_at', '<', now()->subDays(30))
             ->count();
-
-        return view('nurse.dashboard', compact('assignedPatients', 'pendingReports', 'patientsCount', 'reportsCount', 'incidentsCount'));
+    
+        return view('nurse.dashboard', compact(
+            'assignedPatients',
+            'pendingReports',
+            'patientsCount',
+            'reportsCount',
+            'incidentsCount'
+        ));
     }
+    
 
     protected function defaultDashboard()
     {

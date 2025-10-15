@@ -59,15 +59,16 @@
                         </td>
                         <td>{{ $eval->notes ?? '—' }}</td>
                         <td>
-                            @if($eval->scores)
-                                <ul class="list-unstyled mb-0">
-                                    @foreach(json_decode($eval->scores, true) as $key => $value)
-                                        <li><strong>{{ ucfirst($key) }}:</strong> {{ $value }}</li>
-                                    @endforeach
-                                </ul>
-                            @else
-                                —
-                            @endif
+                            @if($eval->scores && is_array($eval->scores))
+                            <ul class="list-unstyled mb-0">
+                                @foreach($eval->scores as $key => $value)
+                                    <li><strong>{{ ucfirst($key) }}:</strong> {{ $value }}</li>
+                                @endforeach
+                            </ul>
+                        @else
+                            —
+                        @endif
+                        
                         </td>
     
                         @if(auth()->user()->hasRole('psychiatrist'))

@@ -56,7 +56,12 @@ class EvaluationController extends Controller
             'scores' => $validated['scores'],
         ]);
 
-        AuditLogger::log('Created evaluation', "Patient ID {$evaluation->patient_id}, Risk: {$evaluation->risk_level}", 'evaluations');
+        // ✅ Log the update using your trait
+        $this->logAudit(
+            'Updated evaluation',
+            "Evaluation ID {$evaluation->id} updated",
+            'evaluations'
+        );
 
         return redirect()->route('evaluations.index')->with('success', 'Evaluation recorded successfully.');
     }
@@ -77,25 +82,36 @@ class EvaluationController extends Controller
     public function update(Request $request, $id)
     {
         $evaluation = Evaluation::findOrFail($id);
-
+    
+        // Validate input
         $validated = $request->validate([
             'patient_id' => 'required|exists:patients,id',
-            'risk_level' => 'nullable|string|max:255',
-            'notes' => 'nullable|string',
-            'scores' => 'nullable|json',
+            'risk_level' => 'nullable|in:mild,moderate,severe', // restrict to allowed values
+            'notes'      => 'nullable|string',
+            'scores'     => 'nullable|json',
         ]);
-
+    
+        // Update evaluation
         $evaluation->update([
             'patient_id' => $validated['patient_id'],
-            'risk_level' => $validated['risk_level'],
-            'notes' => $validated['notes'],
-            'scores' => $validated['scores'],
+            'risk_level' => $validated['risk_level'] ?? null,
+            'notes'      => $validated['notes'] ?? null,
+            'scores'     => $validated['scores'] ?? null,
+            'evaluated_by' => auth()->id(), // update evaluator to current user
         ]);
-
-        AuditLogger::log('Updated evaluation', "Evaluation ID {$evaluation->id}", 'evaluations');
-
-        return redirect()->route('evaluations.index')->with('success', 'Evaluation updated successfully.');
+    
+            // ✅ Log the update using your trait
+        $this->logAudit(
+            'Updated evaluation',
+            "Evaluation ID {$evaluation->id} updated",
+            'evaluations'
+        );
+    
+        return redirect()
+            ->route('evaluations.index')
+            ->with('success', 'Evaluation updated successfully.');
     }
+    
 
     public function destroy($id)
     {
