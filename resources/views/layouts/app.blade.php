@@ -135,11 +135,12 @@
                     <li>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-                            <button type="submit" class="dropdown-item">
+                            <button type="submit" class="dropdown-item text-white">
                                 <i class="bi bi-box-arrow-right me-2"></i> Logout
                             </button>
                         </form>
                     </li>
+                    
                 </ul>
             </div>
         </div>
@@ -205,10 +206,11 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.index.*') ? 'active' : '' }}">
-                <i class="bi bi-user-icon me-2"></i> User Management
+            <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.index*') ? 'active' : '' }}">
+                <i class="bi bi-people me-2"></i> User Management
             </a>
         </li>
+        
     @endif
     
     </ul>

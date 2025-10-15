@@ -36,15 +36,21 @@
             </div>
 
             <div class="mb-3">
-                <label for="role" class="form-label"><i class="bi bi-person-badge-fill me-1"></i> Role</label>
-                <select id="role" name="role" class="form-select" required>
+                <label for="role" class="form-label">
+                    <i class="bi bi-person-badge-fill me-1"></i> Role
+                </label>
+                <select id="role" name="role" class="form-select" disabled>
                     @foreach(['admin', 'psychiatrist', 'nurse'] as $roleOption)
-                        <option value="{{ $roleOption }}" {{ old('role', $user->role) === $roleOption ? 'selected' : '' }}>
+                        <option value="{{ $roleOption }}" 
+                            {{ optional($user->roles->first())->name === $roleOption ? 'selected' : '' }}>
                             {{ ucfirst($roleOption) }}
                         </option>
                     @endforeach
                 </select>
+                <!-- Hidden input ensures the role value still submits (since disabled fields don't submit) -->
+                <input type="hidden" name="role" value="{{ optional($user->roles->first())->name }}">
             </div>
+            
 
             <button type="submit" class="btn btn-primary">
                 <i class="bi bi-save me-1"></i> Save Changes
