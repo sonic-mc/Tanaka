@@ -18,7 +18,7 @@
             @foreach([
                 'view-users' => 'View All Users',
                 'manage-users' => 'Create / Edit / Deactivate',
-                'assign-roles' => 'Assign & Update Roles',
+                // 'assign-roles' => 'Assign & Update Roles',
                 'access-reset' => 'Access & Password Reset',
                 'audit-logs' => 'Audit Logs'
             ] as $tab => $label)
@@ -121,7 +121,7 @@
                 <p class="text-muted">Once a user is selected, you can edit their details or deactivate them.</p>
             </div>
 
-            {{-- Tab 3: Assign & Update Roles --}}
+            {{-- Tab 3: Assign & Update Roles
             <div class="tab-pane fade {{ $activeTab === 'assign-roles' ? 'show active' : '' }}" id="assign-roles" role="tabpanel">
                 <form method="POST" action="{{ route('admin.users.updateRole') }}">
                     @csrf
@@ -146,7 +146,7 @@
                         <div class="col-md-2"><button class="btn btn-warning w-100">Update Role</button></div>
                     </div>
                 </form>
-            </div>
+            </div> --}}
 
             {{-- Tab 4: Access & Password Reset --}}
             <div class="tab-pane fade {{ $activeTab === 'access-reset' ? 'show active' : '' }}" id="access-reset" role="tabpanel">
