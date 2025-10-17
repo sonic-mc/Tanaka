@@ -14,6 +14,9 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
     Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
 
+      // NEW: Download invoice as PDF
+      Route::get('/invoices/{invoice}/download', [InvoiceController::class, 'downloadPdf'])->name('invoices.download');
+
     // Payments for a given invoice
     Route::get('/invoices/{invoice}/payments/create', [PaymentController::class, 'create'])->name('payments.create');
     Route::post('/invoices/{invoice}/payments', [PaymentController::class, 'store'])->name('payments.store');
