@@ -462,19 +462,22 @@
                                 <i class="bi bi-lightning-charge-fill me-2 text-primary"></i> Quick Actions
                             </h6>
                             <div class="d-grid gap-2">
-                                <button type="button" class="btn btn-outline-danger d-flex justify-content-between align-items-center">
+                                <a href="{{ route('incidents.index') }}" class="btn btn-outline-danger d-flex justify-content-between align-items-center">
                                     <span><i class="bi bi-exclamation-circle me-2"></i> Report Incident</span>
                                     <i class="bi bi-arrow-right-circle"></i>
-                                </button>
-                                <button type="button" class="btn btn-outline-success d-flex justify-content-between align-items-center">
+                                </a>
+                            
+                                <a href="{{ route('progress-reports.index') }}" class="btn btn-outline-success d-flex justify-content-between align-items-center">
                                     <span><i class="bi bi-plus-circle me-2"></i> Add Progress Note</span>
                                     <i class="bi bi-arrow-right-circle"></i>
-                                </button>
-                                <button type="button" class="btn btn-outline-warning d-flex justify-content-between align-items-center">
-                                    <span><i class="bi bi-check2-square me-2"></i> Update Attendance</span>
+                                </a>
+                            
+                                <a href="{{ route('therapy-sessions.index') }}" class="btn btn-outline-warning d-flex justify-content-between align-items-center">
+                                    <span><i class="bi bi-check2-square me-2"></i> Create Therapy Session</span>
                                     <i class="bi bi-arrow-right-circle"></i>
-                                </button>
+                                </a>
                             </div>
+                            
                         </div>
                     </div>
         

@@ -48,7 +48,6 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('care-levels', CareLevelController::class);
     Route::resource('tasks', TaskController::class);
     Route::resource('payments', PaymentController::class);
-    Route::resource('billing-statements', BillingStatementController::class);
     Route::resource('audit-logs', AuditLogController::class);
     Route::resource('backups', BackupController::class);
     Route::resource('notifications', NotificationController::class);
@@ -148,3 +147,5 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/users/{id}/assign-role', [UsersController::class, 'assignRole'])->name('users.assignRole');
 });
 
+// Include billing routes
+require __DIR__ . '/billing.php';

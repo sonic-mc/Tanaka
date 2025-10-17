@@ -16,9 +16,9 @@
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="tab" data-bs-target="#analytics" type="button">Incident Analytics</button>
         </li>
-        <li class="nav-item">
+        {{-- <li class="nav-item">
             <button class="nav-link" data-bs-toggle="tab" data-bs-target="#staff" type="button">Staff Insights</button>
-        </li>
+        </li> --}}
     </ul>
 
     <div class="tab-content">
@@ -125,7 +125,7 @@
         
 
         <!-- Staff Insights -->
-        <div class="tab-pane fade" id="staff">
+        {{-- <div class="tab-pane fade" id="staff">
             <div class="card shadow-sm">
                 <div class="card-body">
                     <h5 class="card-title">Staff Involvement Overview</h5>
@@ -139,7 +139,7 @@
                     </ul>
                 </div>
             </div>
-        </div>
+        </div> --}}
     </div>
 </div>
 @endsection
