@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\Evaluation;
-use App\Models\User;
 use App\Traits\AuditLogger;
 
 class EvaluationController extends Controller
@@ -14,6 +13,13 @@ class EvaluationController extends Controller
 
     public function index(Request $request)
     {
+        // Per-page with sane defaults and allow list
+        $perPage = (int) $request->input('per_page', 10);
+        $allowed = [10, 25, 50, 100];
+        if (! in_array($perPage, $allowed, true)) {
+            $perPage = 10;
+        }
+
         $allPatients = Patient::query()
             ->when($request->all_search, function ($query) use ($request) {
                 $query->where(function ($q) use ($request) {
@@ -26,101 +32,133 @@ class EvaluationController extends Controller
             ->when($request->all_gender, fn($q) => $q->where('gender', $request->all_gender))
             ->when($request->all_care_level, fn($q) => $q->where('current_care_level_id', $request->all_care_level))
             ->with('careLevel')
-            ->get();
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get(['id','first_name','last_name','patient_code']);
 
-        $evaluations = Evaluation::with(['patient', 'evaluator'])->latest()->paginate(10);
+        $evaluations = Evaluation::with([
+                'patient:id,first_name,last_name,patient_code,gender,admission_date',
+                'evaluator:id,name,email'
+            ])
+            ->latest()
+            ->paginate($perPage)
+            ->withQueryString(); // preserve per_page and other query params across pages
 
-        return view('nurse.evaluations.index', compact('evaluations', 'allPatients'));
+        return view('nurse.evaluations.index', compact('evaluations', 'allPatients', 'perPage', 'allowed'));
     }
 
     public function create()
     {
-        $patients = Patient::orderBy('last_name')->get();
+        $patients = Patient::orderBy('last_name')->orderBy('first_name')->get(['id','first_name','last_name','patient_code']);
         return view('nurse.evaluations.create', compact('patients'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'patient_id' => 'required|exists:patients,id',
-            'risk_level' => 'nullable|string|max:255',
-            'notes' => 'nullable|string',
-            'scores' => 'nullable|json',
+            'patient_id' => ['required','exists:patients,id'],
+            'risk_level' => ['nullable','in:mild,moderate,severe'],
+            'notes'      => ['nullable','string'],
+            'scores'     => ['nullable'],
         ]);
+
+        $scores = null;
+        if (is_array($request->input('scores'))) {
+            $scores = collect($request->input('scores'))
+                ->filter(fn($v) => $v !== null && $v !== '')
+                ->all();
+            if (empty($scores)) {
+                $scores = null;
+            }
+        } elseif (is_string($request->input('scores')) && $request->input('scores') !== '') {
+            $decoded = json_decode($request->input('scores'), true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $scores = $decoded;
+            }
+        }
 
         $evaluation = Evaluation::create([
-            'patient_id' => $validated['patient_id'],
+            'patient_id'   => $validated['patient_id'],
             'evaluated_by' => auth()->id(),
-            'risk_level' => $validated['risk_level'],
-            'notes' => $validated['notes'],
-            'scores' => $validated['scores'],
+            'risk_level'   => $validated['risk_level'] ?? null,
+            'notes'        => $validated['notes'] ?? null,
+            'scores'       => $scores,
         ]);
 
-        // ✅ Log the update using your trait
-        $this->logAudit(
-            'Updated evaluation',
-            "Evaluation ID {$evaluation->id} updated",
-            'evaluations'
-        );
+        try {
+            $this->logAudit('Created evaluation', "Evaluation ID {$evaluation->id} created", 'evaluations');
+        } catch (\Throwable $e) {
+            // ignore audit failures
+        }
 
-        return redirect()->route('evaluations.index')->with('success', 'Evaluation recorded successfully.');
+        return redirect()->route('evaluations.index')
+            ->with('success', 'Evaluation recorded successfully.');
     }
 
     public function show($id)
     {
-        $evaluation = Evaluation::with(['patient', 'evaluator'])->findOrFail($id);
+        $evaluation = Evaluation::with(['patient','evaluator'])->findOrFail($id);
         return view('nurse.evaluations.show', compact('evaluation'));
     }
 
     public function edit($id)
     {
-        $evaluation = Evaluation::findOrFail($id);
-        $patients = Patient::orderBy('last_name')->get();
+        $evaluation = Evaluation::with(['patient','evaluator'])->findOrFail($id);
+        $patients = Patient::orderBy('last_name')->orderBy('first_name')->get(['id','first_name','last_name','patient_code']);
         return view('nurse.evaluations.edit', compact('evaluation', 'patients'));
     }
 
     public function update(Request $request, $id)
     {
         $evaluation = Evaluation::findOrFail($id);
-    
-        // Validate input
+
         $validated = $request->validate([
-            'patient_id' => 'required|exists:patients,id',
-            'risk_level' => 'nullable|in:mild,moderate,severe', // restrict to allowed values
-            'notes'      => 'nullable|string',
-            'scores'     => 'nullable|json',
+            'patient_id' => ['required','exists:patients,id'],
+            'risk_level' => ['nullable','in:mild,moderate,severe'],
+            'notes'      => ['nullable','string'],
+            'scores'     => ['nullable'],
         ]);
-    
-        // Update evaluation
+
+        $scores = null;
+        if (is_array($request->input('scores'))) {
+            $scores = collect($request->input('scores'))
+                ->filter(fn($v) => $v !== null && $v !== '')
+                ->all();
+            if (empty($scores)) {
+                $scores = null;
+            }
+        } elseif (is_string($request->input('scores')) && $request->input('scores') !== '') {
+            $decoded = json_decode($request->input('scores'), true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $scores = $decoded;
+            }
+        }
+
         $evaluation->update([
-            'patient_id' => $validated['patient_id'],
-            'risk_level' => $validated['risk_level'] ?? null,
-            'notes'      => $validated['notes'] ?? null,
-            'scores'     => $validated['scores'] ?? null,
-            'evaluated_by' => auth()->id(), // update evaluator to current user
+            'patient_id'   => $validated['patient_id'],
+            'risk_level'   => $validated['risk_level'] ?? null,
+            'notes'        => $validated['notes'] ?? null,
+            'scores'       => $scores,
+            'evaluated_by' => auth()->id(),
         ]);
-    
-            // ✅ Log the update using your trait
-        $this->logAudit(
-            'Updated evaluation',
-            "Evaluation ID {$evaluation->id} updated",
-            'evaluations'
-        );
-    
-        return redirect()
-            ->route('evaluations.index')
+
+        try {
+            $this->logAudit('Updated evaluation', "Evaluation ID {$evaluation->id} updated", 'evaluations');
+        } catch (\Throwable $e) {}
+
+        return redirect()->route('evaluations.index')
             ->with('success', 'Evaluation updated successfully.');
     }
-    
 
     public function destroy($id)
     {
         $evaluation = Evaluation::findOrFail($id);
         $evaluation->delete();
 
-        AuditLogger::log('Deleted evaluation', "Evaluation ID {$id}", 'evaluations');
+        try {
+            $this->logAudit('Deleted evaluation', "Evaluation ID {$id}", 'evaluations');
+        } catch (\Throwable $e) {}
 
         return back()->with('success', 'Evaluation deleted.');
     }
 }
-

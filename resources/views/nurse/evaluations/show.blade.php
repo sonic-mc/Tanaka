@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+@section('header')
+    Evaluation Details
+@endsection
+
 @section('content')
 <div class="container">
     <h2 class="mb-4">Evaluation Details</h2>
@@ -12,7 +16,9 @@
             <p><strong>Patient Name:</strong> {{ $evaluation->patient->first_name }} {{ $evaluation->patient->last_name }}</p>
             <p><strong>Patient Code:</strong> {{ $evaluation->patient->patient_code }}</p>
             <p><strong>Gender:</strong> {{ ucfirst($evaluation->patient->gender) }}</p>
-            <p><strong>Admission Date:</strong> {{ $evaluation->patient->admission_date->format('d M Y') }}</p>
+            <p><strong>Admission Date:</strong>
+                {{ optional($evaluation->patient->admission_date)->format('d M Y') ?? '—' }}
+            </p>
         </div>
     </div>
 
@@ -21,8 +27,8 @@
             <i class="bi bi-person-circle me-1"></i> Evaluator
         </div>
         <div class="card-body">
-            <p><strong>Name:</strong> {{ $evaluation->evaluator->name }}</p>
-            <p><strong>Email:</strong> {{ $evaluation->evaluator->email }}</p>
+            <p><strong>Name:</strong> {{ $evaluation->evaluator->name ?? '—' }}</p>
+            <p><strong>Email:</strong> {{ $evaluation->evaluator->email ?? '—' }}</p>
         </div>
     </div>
 
@@ -32,17 +38,23 @@
         </div>
         <div class="card-body">
             <p><strong>Notes:</strong> {{ $evaluation->notes ?? 'N/A' }}</p>
-            <p><strong>Risk Level:</strong> {{ ucfirst($evaluation->risk_level ?? 'N/A') }}</p>
+            <p><strong>Risk Level:</strong>
+                {{ $evaluation->risk_level ? ucfirst($evaluation->risk_level) : 'N/A' }}
+            </p>
 
-            @if($evaluation->scores)
-                <p><strong>Scores:</strong></p>
-                <pre>{{ json_encode($evaluation->scores, JSON_PRETTY_PRINT) }}</pre>
+            <p><strong>Scores:</strong></p>
+            @if(!empty($evaluation->scores))
+                <ul class="mb-2">
+                    @foreach($evaluation->scores as $key => $value)
+                        <li><strong>{{ ucfirst($key) }}:</strong> {{ $value }}</li>
+                    @endforeach
+                </ul>
             @else
-                <p><strong>Scores:</strong> N/A</p>
+                <p>N/A</p>
             @endif
 
-            <p><strong>Created At:</strong> {{ $evaluation->created_at->format('d M Y H:i') }}</p>
-            <p><strong>Last Updated:</strong> {{ $evaluation->updated_at->format('d M Y H:i') }}</p>
+            <p><strong>Created At:</strong> {{ $evaluation->created_at?->format('d M Y H:i') }}</p>
+            <p><strong>Last Updated:</strong> {{ $evaluation->updated_at?->format('d M Y H:i') }}</p>
         </div>
     </div>
 

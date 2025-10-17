@@ -9,15 +9,16 @@ class Evaluation extends Model
     protected $fillable = [
         'patient_id',
         'evaluated_by',
-        'risk_level',
         'notes',
+        'risk_level',
         'scores',
     ];
 
     protected $casts = [
-        'scores' => 'array',
+        'scores'     => 'array',   // stored as JSON, used as array
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
-    
 
     public function patient()
     {
@@ -26,7 +27,6 @@ class Evaluation extends Model
 
     public function evaluator()
     {
-        return $this->belongsTo(User::class, 'evaluator_id');
+        return $this->belongsTo(User::class, 'evaluated_by');
     }
 }
-

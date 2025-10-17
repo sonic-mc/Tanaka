@@ -56,7 +56,6 @@ Route::middleware(['auth'])->group(function () {
 // Nurse & Psychiatrist routes using Spatie's role middleware
 Route::middleware(['auth', 'role:psychiatrist|nurse'])->group(function () {
     Route::resource('patients', PatientController::class);
-    Route::resource('evaluations', EvaluationController::class);
     Route::resource('progress-reports', ProgressReportController::class);
     Route::resource('therapy-sessions', TherapySessionController::class);
     Route::resource('incidents', IncidentReportController::class);
@@ -146,6 +145,12 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/users', [UsersController::class, 'index'])->name('users.index');
     Route::post('/users/{id}/assign-role', [UsersController::class, 'assignRole'])->name('users.assignRole');
 });
+
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::resource('evaluations', EvaluationController::class)
+        ->only(['index','store','show','edit','update','destroy']);
+});
+
 
 // Include billing routes
 require __DIR__ . '/billing.php';
