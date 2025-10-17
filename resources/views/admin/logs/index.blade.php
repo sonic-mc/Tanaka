@@ -69,9 +69,9 @@
             <a href="{{ route('admin.logs.export', array_merge(request()->query(), ['format' => 'csv'])) }}" class="btn btn-outline-success me-2">
                 <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
             </a>
-            <a href="{{ route('admin.logs.export', array_merge(request()->query(), ['format' => 'pdf'])) }}" class="btn btn-outline-danger">
+            {{-- <a href="{{ route('admin.logs.export', array_merge(request()->query(), ['format' => 'pdf'])) }}" class="btn btn-outline-danger">
                 <i class="bi bi-file-earmark-pdf"></i> Export PDF
-            </a>
+            </a> --}}
         </div>
         
         

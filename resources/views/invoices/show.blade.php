@@ -79,6 +79,7 @@
     @endif
 
     <div class="d-flex justify-content-between mt-4">
+        <a href="{{ route('invoices.download', $invoice) }}" class="btn btn-success">Download PDF</a>
         @if($invoice->status !== 'paid')
             <a href="{{ route('payments.create', $invoice) }}" class="btn btn-success">
                 <i class="bi bi-cash-coin me-1"></i> Record Payment

@@ -59,6 +59,7 @@
                                 @if($backup->status === 'completed') bg-success
                                 @elseif($backup->status === 'failed') bg-danger
                                 @elseif($backup->status === 'restored') bg-warning text-dark
+                                @elseif($backup->status === 'pending') bg-info
                                 @else bg-secondary
                                 @endif">
                                 {{ ucfirst($backup->status) }}
@@ -71,20 +72,27 @@
                             @else
                                 <span class="text-muted">System</span>
                             @endif
-                            <td>{{ \Carbon\Carbon::parse($backup->created_at)->format('d M Y H:i') }}</td>
-                            <td>
-                                {{ $backup->restored_at 
-                                    ? \Carbon\Carbon::parse($backup->restored_at)->format('d M Y H:i') 
-                                    : '—' 
-                                }}
-                            </td>
-                            
-                            <form method="POST" action="{{ route('admin.backups.restore', $backup->id) }}">
-                                @csrf
-                                <button class="btn btn-sm btn-outline-warning" onclick="return confirm('Restore from this backup?')">
-                                    <i class="bi bi-arrow-counterclockwise"></i> Restore
-                                </button>
-                            </form>
+                        </td>
+                        <td>{{ \Carbon\Carbon::parse($backup->created_at)->format('d M Y H:i') }}</td>
+                        <td>
+                            {{ $backup->restored_at 
+                                ? \Carbon\Carbon::parse($backup->restored_at)->format('d M Y H:i') 
+                                : '—' 
+                            }}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2">
+                                <a href="{{ route('admin.backups.show', $backup) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                                <form method="POST" action="{{ route('admin.backups.restore', $backup) }}"
+                                      onsubmit="return confirm('Restore from this backup? This action cannot be undone.')">
+                                    @csrf
+                                    <button class="btn btn-sm btn-outline-warning">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Restore
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     @endforeach

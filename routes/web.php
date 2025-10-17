@@ -111,11 +111,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('logs/export', [AuditLogController::class, 'export'])->name('logs.export');
 });
 
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('backups', [BackupController::class, 'index'])->name('backups.index');
-    Route::post('backups', [BackupController::class, 'store'])->name('backups.store');
-    Route::post('backups/{id}/restore', [BackupController::class, 'restore'])->name('backups.restore');
-});
+// Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+//     Route::get('backups', [BackupController::class, 'index'])->name('backups.index');
+//     Route::post('backups', [BackupController::class, 'store'])->name('backups.store');
+//     Route::post('backups/{id}/restore', [BackupController::class, 'restore'])->name('backups.restore');
+// });
 
 
 Route::middleware(['auth', 'role:admin|finance'])->prefix('admin')->name('admin.')->group(function () {
@@ -149,3 +149,5 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
 // Include billing routes
 require __DIR__ . '/billing.php';
+
+require __DIR__ . '/admin.php';

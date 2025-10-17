@@ -41,15 +41,23 @@
 
     <h5>4. Behavioral Observations</h5>
     <ul>
-        <li>Medication Adherence: {{ $report->medication_adherence ? 'Yes' : 'No' }}</li>
-        <li>Therapy Engagement: {{ $report->therapy_engagement ? 'Yes' : 'No' }}</li>
-        <li>Risk Behaviors: {{ $report->risk_behaviors ?? 'None' }}</li>
+        <li>Medication Adherence: 
+            @if($report->medication_adherence === null) — 
+            @else {{ $report->medication_adherence ? 'Yes' : 'No' }} 
+            @endif
+        </li>
+        <li>Therapy Engagement:
+            @if($report->therapy_engagement === null) — 
+            @else {{ $report->therapy_engagement ? 'Yes' : 'No' }} 
+            @endif
+        </li>
+        <li>Risk Behaviors: {{ $report->risk_behaviors ?: 'None' }}</li>
         <li>Sleep Activity Patterns: {{ $report->sleep_activity_patterns ?? '—' }}</li>
     </ul>
 
     <h5>5. Physical Health</h5>
     <ul>
-        <li>Weight: {{ $report->weight ?? '—' }} kg</li>
+        <li>Weight: {{ $report->weight !== null ? number_format($report->weight, 2) . ' kg' : '—' }}</li>
         <li>Vital Signs: {{ $report->vital_signs ?? '—' }}</li>
         <li>Medication Side Effects: {{ $report->medication_side_effects ?? '—' }}</li>
         <li>General Health: {{ $report->general_health ?? '—' }}</li>
@@ -65,16 +73,16 @@
 
     <h5>7. Risk Assessment</h5>
     <ul>
-        <li>Suicide Risk: {{ ['Low','Moderate','High'][$report->suicide_risk - 1] ?? '—' }}</li>
-        <li>Homicide Risk: {{ ['Low','Moderate','High'][$report->homicide_risk - 1] ?? '—' }}</li>
-        <li>Self Neglect Risk: {{ ['Low','Moderate','High'][$report->self_neglect_risk - 1] ?? '—' }}</li>
-        <li>Vulnerability Risk: {{ ['Low','Moderate','High'][$report->vulnerability_risk - 1] ?? '—' }}</li>
+        <li>Suicide Risk: {{ [1=>'Low',2=>'Moderate',3=>'High'][$report->suicide_risk] ?? '—' }}</li>
+        <li>Homicide Risk: {{ [1=>'Low',2=>'Moderate',3=>'High'][$report->homicide_risk] ?? '—' }}</li>
+        <li>Self Neglect Risk: {{ [1=>'Low',2=>'Moderate',3=>'High'][$report->self_neglect_risk] ?? '—' }}</li>
+        <li>Vulnerability Risk: {{ [1=>'Low',2=>'Moderate',3=>'High'][$report->vulnerability_risk] ?? '—' }}</li>
     </ul>
 
     <h5>8. Treatment Goals</h5>
-    @if(!empty($treatmentGoals))
+    @if(!empty($report->treatment_goals))
         <ul>
-            @foreach($treatmentGoals as $goal)
+            @foreach($report->treatment_goals as $goal)
                 <li>
                     <strong>{{ $goal['goal'] ?? '—' }}</strong>
                     | Baseline: {{ $goal['baseline'] ?? '—' }}
