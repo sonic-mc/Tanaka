@@ -201,7 +201,8 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="{{ route('admin.billing.index') }}" class="nav-link {{ request()->routeIs('admin.billing.*') ? 'active' : '' }}">
+            <a href="{{ route('invoices.index') }}"
+               class="nav-link {{ request()->routeIs(['invoices.*', 'billing.*', 'payments.*']) ? 'active' : '' }}">
                 <i class="bi bi-credit-card-2-front-fill me-2"></i> Billing & Payments
             </a>
         </li>
