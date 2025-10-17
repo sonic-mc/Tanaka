@@ -10,7 +10,8 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-    {Schema::create('audit_logs', function (Blueprint $table) {
+    {
+        Schema::create('audit_logs', function (Blueprint $table) {
         $table->id();
         $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
         $table->string('action'); // e.g. login, logout, created patient

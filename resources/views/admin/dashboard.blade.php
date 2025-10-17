@@ -250,6 +250,7 @@
 </div>
 
 <!-- Financial & Activity -->
+<!-- Financial & Activity -->
 <div class="row mb-5">
     <div class="col-lg-6 mb-4">
         <div class="card modern-card chart-card">
@@ -259,52 +260,100 @@
             </div>
             <div class="row mt-3 text-center">
                 <div class="col-6">
-                    <div class="metric-value text-primary">${{ number_format($billingCount * 850) }}</div>
+                    <div class="metric-value text-primary">
+                        ${{ number_format($totalRevenue, 2) }}
+                    </div>
                     <div class="metric-label">Total Revenue</div>
                 </div>
                 <div class="col-6">
-                    <div class="metric-value text-success">{{ $paymentCount }}</div>
+                    <div class="metric-value text-success">
+                        {{ number_format($paymentCount) }}
+                    </div>
                     <div class="metric-label">Payments Received</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-lg-6 mb-4">
-        <div class="card modern-card chart-card">
-            <h5 class="chart-title d-flex justify-content-between">
-                Recent Activity <span class="badge bg-primary">{{ $notificationCount }} new</span>
-            </h5>
-            <div class="activity-item d-flex align-items-center mb-3">
-                <i class="fas fa-user-plus text-primary me-3"></i>
-                <div>
-                    <div class="fw-semibold">New patient admitted</div>
-                    <small class="text-muted">John Smith - Room 204</small>
-                </div>
-            </div>
-            <div class="activity-item d-flex align-items-center mb-3">
-                <i class="fas fa-check-circle text-success me-3"></i>
-                <div>
-                    <div class="fw-semibold">Therapy session completed</div>
-                    <small class="text-muted">Physical therapy - Ward A</small>
-                </div>
-            </div>
-            <div class="activity-item d-flex align-items-center mb-3">
-                <i class="fas fa-exclamation-triangle text-warning me-3"></i>
-                <div>
-                    <div class="fw-semibold">Medication alert</div>
-                    <small class="text-muted">Low stock - Insulin</small>
-                </div>
-            </div>
-            <div class="activity-item d-flex align-items-center">
-                <i class="fas fa-file-medical text-info me-3"></i>
-                <div>
-                    <div class="fw-semibold">Report generated</div>
-                    <small class="text-muted">Weekly patient summary</small>
-                </div>
-            </div>
-        </div>
-    </div>
+
+@push('scripts')
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        (function () {
+            const labels   = @json($chart['labels']);
+            const invoices = @json($chart['invoices']);
+            const payments = @json($chart['payments']);
+
+            const ctx = document.getElementById('financialChart').getContext('2d');
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            type: 'bar',
+                            label: 'Invoiced',
+                            data: invoices,
+                            borderColor: '#4f46e5',
+                            backgroundColor: 'rgba(79, 70, 229, .25)',
+                            borderWidth: 1.5,
+                            borderRadius: 6,
+                        },
+                        {
+                            type: 'line',
+                            label: 'Payments',
+                            data: payments,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, .25)',
+                            borderWidth: 2,
+                            tension: .3,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#10b981',
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function (ctx) {
+                                    const v = ctx.parsed.y ?? 0;
+                                    return `${ctx.dataset.label}: $${v.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: false,
+                            grid: { display: false }
+                        },
+                        y: {
+                            stacked: false,
+                            beginAtZero: true,
+                            ticks: {
+                                callback: (value) => '$' + Number(value).toLocaleString()
+                            }
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
+@endpush
+
+    {{-- ... your other dashboard content ... --}}
+@include('nurse.partials.recent-activity')
+{{-- ... --}}
 </div>
 
 <!-- System Status -->

@@ -37,6 +37,10 @@ use App\Models\MedicalHistory;
 use App\Models\LabResult;
 use App\Models\RadiologyReport;
 use App\Traits\AuditLogger;
+use Carbon\Carbon;
+use App\Models\AuditLog;
+
+
 
 
 
@@ -142,6 +146,52 @@ class DashboardController extends Controller
     
           // Count users without roles
         $noRoleCount = $users->count();
+
+         // Financial KPIs
+         $totalRevenue = Payment::whereNotNull('paid_at')->sum('amount');     // money received
+         $paymentCount = Payment::whereNotNull('paid_at')->count();           // payments received
+ 
+         // Build last 6 months series (including current month)
+         $months = collect(range(0, 5))
+             ->map(fn ($i) => Carbon::now()->startOfMonth()->subMonths(5 - $i));
+ 
+         // Aggregate invoices by month (issue_date)
+         $invoiceMonthly = Invoice::selectRaw("DATE_FORMAT(issue_date, '%Y-%m') as ym, SUM(amount) as total")
+             ->whereDate('issue_date', '>=', $months->first()->toDateString())
+             ->groupBy('ym')
+             ->orderBy('ym')
+             ->pluck('total', 'ym');
+ 
+         // Aggregate payments by month (paid_at)
+         $paymentMonthly = Payment::selectRaw("DATE_FORMAT(paid_at, '%Y-%m') as ym, SUM(amount) as total")
+             ->whereNotNull('paid_at')
+             ->whereDate('paid_at', '>=', $months->first()->toDateString())
+             ->groupBy('ym')
+             ->orderBy('ym')
+             ->pluck('total', 'ym');
+ 
+         // Build chart arrays in fixed month order
+         $chartLabels = $months->map(fn ($d) => $d->format('M Y'))->all();
+         $chartKeys   = $months->map(fn ($d) => $d->format('Y-m'))->all();
+ 
+         $invoicesSeries = array_map(fn ($ym) => (float) ($invoiceMonthly[$ym] ?? 0), $chartKeys);
+         $paymentsSeries = array_map(fn ($ym) => (float) ($paymentMonthly[$ym] ?? 0), $chartKeys);
+ 
+         $chart = [
+             'labels'   => $chartLabels,
+             'invoices' => $invoicesSeries,
+             'payments' => $paymentsSeries,
+         ];
+
+         // Recent activity from audit logs
+        $auditLogs = AuditLog::with('user')
+        ->orderByDesc('timestamp')
+        ->limit(5)
+        ->get();
+
+    // “New” count for the badge (last 24 hours)
+    $notificationCount = AuditLog::where('timestamp', '>=', now()->subDay())->count();
+ 
     
         return view('admin.dashboard', compact(
             'patientCount',
@@ -170,7 +220,13 @@ class DashboardController extends Controller
             'roles',
             'permissions',
             'users',
-            'noRoleCount'
+            'noRoleCount',
+            'totalRevenue',
+            'paymentCount',
+            'chart',
+            'auditLogs',
+
+
         ));
     }
     
