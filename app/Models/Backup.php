@@ -6,20 +6,19 @@ use Illuminate\Database\Eloquent\Model;
 
 class Backup extends Model
 {
-    public $timestamps = false; // Your table has created_at but no updated_at
+    // Your table only has created_at and restored_at, so disable Eloquent timestamps
+    public $timestamps = false;
 
     protected $fillable = [
         'file_path',
         'filename',
-        'type',
-        'status',
+        'type',        // 'database' | 'files' | 'full'
+        'status',      // 'pending' | 'completed' | 'failed' | 'restored'
         'notes',
         'created_by',
         'origin_ip',
+        'created_at',
         'restored_at',
-        // Optional meta if you add later:
-        // 'size_bytes',
-        // 'checksum_sha256',
     ];
 
     protected $casts = [

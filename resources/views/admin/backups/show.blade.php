@@ -40,13 +40,12 @@
                 </div>
                 <div><strong>Origin IP:</strong> {{ $backup->origin_ip ?? '—' }}</div>
                 <div><strong>Size:</strong> {{ isset($size) && $size ? number_format($size/1024/1024, 2) . ' MB' : '—' }}</div>
-                <div><strong>Checksum (SHA-256):</strong> <code>{{ $backup->checksum_sha256 ?? '—' }}</code></div>
                 <div><strong>Notes:</strong> {{ $backup->notes ?? '—' }}</div>
             </div>
         </div>
 
         <div class="d-flex gap-2">
-            @if($exists)
+            @if(($exists ?? false) === true)
                 <a href="{{ route('admin.backups.download', $backup) }}" class="btn btn-outline-primary">
                     <i class="bi bi-download"></i> Download
                 </a>

@@ -73,10 +73,10 @@
                                 <span class="text-muted">System</span>
                             @endif
                         </td>
-                        <td>{{ \Carbon\Carbon::parse($backup->created_at)->format('d M Y H:i') }}</td>
+                        <td>{{ $backup->created_at?->format('d M Y H:i') }}</td>
                         <td>
                             {{ $backup->restored_at 
-                                ? \Carbon\Carbon::parse($backup->restored_at)->format('d M Y H:i') 
+                                ? $backup->restored_at->format('d M Y H:i')
                                 : '—' 
                             }}
                         </td>
@@ -85,11 +85,22 @@
                                 <a href="{{ route('admin.backups.show', $backup) }}" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-eye"></i> View
                                 </a>
+                                <a href="{{ route('admin.backups.download', $backup) }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-download"></i> Download
+                                </a>
                                 <form method="POST" action="{{ route('admin.backups.restore', $backup) }}"
                                       onsubmit="return confirm('Restore from this backup? This action cannot be undone.')">
                                     @csrf
                                     <button class="btn btn-sm btn-outline-warning">
                                         <i class="bi bi-arrow-counterclockwise"></i> Restore
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ route('admin.backups.destroy', $backup) }}"
+                                      onsubmit="return confirm('Delete this backup permanently?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i> Delete
                                     </button>
                                 </form>
                             </div>

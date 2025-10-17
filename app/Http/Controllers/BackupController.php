@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Backup;
-use App\Models\AuditLog;
 use App\Traits\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -32,10 +31,10 @@ class BackupController extends Controller
     {
         $backup->loadMissing(['creator:id,name,email']);
 
-        // Attempt to get latest file metadata from disk
         $disk = Storage::disk('backups');
-        $exists = $backup->filename ? $disk->exists($backup->filename) : false;
-        $size = ($exists && method_exists($disk, 'size')) ? $disk->size($backup->filename) : $backup->size_bytes;
+        $filename = $backup->filename ?: basename($backup->file_path);
+        $exists = $filename ? $disk->exists($filename) : false;
+        $size = $exists ? $disk->size($filename) : null;
 
         return view('admin.backups.show', compact('backup', 'exists', 'size'));
     }
@@ -51,28 +50,48 @@ class BackupController extends Controller
         $ip = $request->ip();
 
         $disk = Storage::disk('backups');
+
+        // Ensure local storage root exists (explicitly support 'local' driver)
+        try {
+            if (method_exists($disk, 'path')) {
+                $rootPath = rtrim($disk->path(''), DIRECTORY_SEPARATOR);
+                if (! is_dir($rootPath)) {
+                    @mkdir($rootPath, 0775, true);
+                }
+            } else {
+                // Fallback for older versions: ensure storage/app/backups exists
+                $fallbackRoot = storage_path('app/backups');
+                if (! is_dir($fallbackRoot)) {
+                    @mkdir($fallbackRoot, 0775, true);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Non-fatal; continue and let put() fail if root truly missing
+        }
+
         $filename = 'backup_' . now()->format('Ymd_His') . '_' . Str::upper(Str::random(6)) . '.zip';
 
-        // Create a DB record first in "pending", then update as we go
         $backup = null;
 
         try {
+            // Create record in pending
             $backup = DB::transaction(function () use ($validated, $userId, $ip, $filename) {
                 return Backup::create([
-                    'file_path'   => 'backups://' . $filename, // logical pointer; actual file is on the "backups" disk
+                    'file_path'   => 'backups://' . $filename,
                     'filename'    => $filename,
                     'type'        => $validated['type'],
                     'status'      => 'pending',
                     'notes'       => $validated['notes'] ?? null,
                     'created_by'  => $userId,
                     'origin_ip'   => $ip,
+                    // created_at defaults in DB
                 ]);
             });
 
-            // Generate the ZIP (synchronous demo; can be offloaded to a queued job in production)
+            // Build zip in temp
             $tempDir = storage_path('app/tmp');
             if (! is_dir($tempDir)) {
-                mkdir($tempDir, 0775, true);
+                @mkdir($tempDir, 0775, true);
             }
             $tempZip = $tempDir . DIRECTORY_SEPARATOR . $filename;
 
@@ -81,7 +100,7 @@ class BackupController extends Controller
                 throw new \RuntimeException('Failed to initialize backup ZIP.');
             }
 
-            // Minimal metadata file inside the zip
+            // Add metadata file inside zip
             $meta = "Type: {$validated['type']}\n"
                 . "Created At: " . now()->toDateTimeString() . "\n"
                 . "Created By: " . ($userId ?? 'system') . "\n"
@@ -89,48 +108,40 @@ class BackupController extends Controller
                 . "App: " . config('app.name') . "\n";
             $zip->addFromString('meta.txt', $meta);
 
-            // TODO: add real content:
-            // - For 'database': run a DB dump and add to zip
-            // - For 'files': add storage/app or public files
-            // - For 'full': both DB dump and files
-            // This implementation demonstrates structure; integrate your real backup sources here.
+            // TODO: Add actual backup content here per type:
+            // - 'database': run DB dump and add file(s)
+            // - 'files': add storage directories/public assets
+            // - 'full': both DB and files
 
             $zip->close();
 
-            // Persist to the backups disk
+            // Save to local disk
             $stream = fopen($tempZip, 'r');
             $disk->put($filename, $stream, ['visibility' => 'private']);
             fclose($stream);
 
-            // Compute size and checksum (local path depends on driver; for local this is fine)
-            $size = $disk->size($filename);
-            // For local driver only: $path = $disk->path($filename);
-            $checksum = hash_file('sha256', $tempZip);
-
-            // Clean temp
+            // Remove temp file
             @unlink($tempZip);
 
-            // Update record to completed
-            $backup->update([
-                'status'           => 'completed',
-                'size_bytes'       => $size,
-                'checksum_sha256'  => $checksum,
-            ]);
+            // Mark as completed
+            $backup->status = 'completed';
+            $backup->save();
 
-            AuditLog::log('Created system backup', "Backup file: {$filename}", 'backup', 'info');
+            // Audit
+            $this->logAudit('Created system backup', "Backup file: {$filename}", 'backup', 'info');
 
             return back()->with('success', 'Backup created successfully.');
         } catch (\Throwable $e) {
             Log::error('Backup creation failed', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
 
             if ($backup) {
-                $backup->update(['status' => 'failed']);
+                $backup->status = 'failed';
+                $backup->save();
             }
 
-            AuditLog::log('Backup failed', $e->getMessage(), 'backup', 'error');
+            $this->logAudit('Backup failed', $e->getMessage(), 'backup', 'critical');
 
             return back()->with('error', 'Backup failed: ' . $e->getMessage());
         }
@@ -145,7 +156,6 @@ class BackupController extends Controller
             abort(404, 'Backup file not found.');
         }
 
-        // Streamed download
         return $disk->download($filename, $filename);
     }
 
@@ -159,17 +169,12 @@ class BackupController extends Controller
         }
 
         try {
-            // TODO: Implement your actual restore logic here:
-            // - For DB: import SQL dump
-            // - For files: unzip and overwrite target directories
-            // Make sure to validate paths carefully and handle downtime windows.
+            // TODO: Add actual restore logic (DB import, files unzip, etc.)
+            $backup->status = 'restored';
+            $backup->restored_at = now();
+            $backup->save();
 
-            $backup->update([
-                'status'      => 'restored',
-                'restored_at' => now(),
-            ]);
-
-            AuditLog::log('Restored system backup', "Restored from: {$backup->filename}", 'backup', 'warning');
+            $this->logAudit('Restored system backup', "Restored from: {$backup->filename}", 'backup', 'warning');
 
             return back()->with('success', 'System restored from backup.');
         } catch (\Throwable $e) {
@@ -178,7 +183,7 @@ class BackupController extends Controller
                 'error'     => $e->getMessage(),
             ]);
 
-            AuditLog::log('Restore failed', $e->getMessage(), 'backup', 'error');
+            $this->logAudit('Restore failed', $e->getMessage(), 'backup', 'critical');
 
             return back()->with('error', 'Restore failed: ' . $e->getMessage());
         }
@@ -193,9 +198,10 @@ class BackupController extends Controller
             if ($filename && $disk->exists($filename)) {
                 $disk->delete($filename);
             }
+
             $backup->delete();
 
-            AuditLog::log('Deleted backup', "Deleted: {$filename}", 'backup', 'warning');
+            $this->logAudit('Deleted backup', "Deleted: {$filename}", 'backup', 'warning');
 
             return back()->with('success', 'Backup deleted.');
         } catch (\Throwable $e) {
