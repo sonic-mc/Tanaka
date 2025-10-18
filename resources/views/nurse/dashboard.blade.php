@@ -157,7 +157,7 @@
                         </div>
                     </div>
 
-                    <div class="col-md-3">
+                    {{-- <div class="col-md-3">
                         <div class="card text-center border-0 shadow-sm">
                             <div class="card-body">
                                 <div class="mb-2 rounded-circle d-inline-block p-3" style="background: linear-gradient(135deg, #f43f5e, #ec4899);">
@@ -167,7 +167,7 @@
                                 <small class="text-muted">Appointments</small>
                             </div>
                         </div>
-                    </div>
+                    </div> --}}
 
                     <div class="col-md-3">
                         <div class="card text-center border-0 shadow-sm">
@@ -198,36 +198,44 @@
                     <!-- Patient Requests -->
                     <div class="col-md-8">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="fw-bold">Patient Requests</h5>
-                            <a href="#" class="text-primary text-decoration-none">Show All →</a>
+                            <h5 class="fw-bold">My Assigned Patients</h5>
+                            <a href="{{ route('patients.index') }}" class="text-primary text-decoration-none">Show All →</a>
                         </div>
-
-                        @foreach ([
-                            ['name' => 'Emily Chen', 'case' => 'Anxiety Management', 'date' => '10 May 2025', 'time' => '10:00 AM'],
-                            ['name' => 'James Wilson', 'case' => 'Depression Treatment', 'date' => '10 May 2025', 'time' => '02:00 PM'],
-                            ['name' => 'Maria Garcia', 'case' => 'PTSD Recovery', 'date' => '11 May 2025', 'time' => '11:00 AM']
-                        ] as $req)
+                    
+                        @forelse ($patients as $patient)
                             <div class="request-card card mb-3 shadow-sm border-0">
                                 <div class="card-body d-flex justify-content-between align-items-center">
                                     <div class="d-flex align-items-center">
-                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($req['name']) }}&background=00d4aa&color=fff"
-                                             class="rounded-circle me-3" width="50" alt="{{ $req['name'] }}">
+                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($patient->first_name . ' ' . $patient->last_name) }}&background=00d4aa&color=fff"
+                                             class="rounded-circle me-3" width="50" alt="{{ $patient->first_name }}">
                                         <div>
-                                            <h6 class="mb-1">{{ $req['name'] }}</h6>
-                                            <p class="text-muted small mb-0">{{ $req['case'] }}</p>
+                                            <h6 class="mb-1">{{ $patient->first_name }} {{ $patient->last_name }}</h6>
+                                            <p class="text-muted small mb-0">
+                                                {{ $patient->admission_reason ?? 'General Care' }}
+                                            </p>
                                         </div>
                                     </div>
                                     <div class="text-end">
                                         <span class="badge bg-light text-dark me-2">
-                                            <i class="bi bi-calendar3 me-1"></i>{{ $req['date'] }}
+                                            <i class="bi bi-calendar3 me-1"></i>
+                                            {{ \Carbon\Carbon::parse($patient->admission_date)->format('d M Y') }}
                                         </span>
-                                        <span class="badge bg-warning text-dark">{{ $req['time'] }}</span>
-                                        <button class="btn btn-sm btn-outline-primary ms-2">See Details</button>
+                                        <span class="badge bg-warning text-dark">
+                                            {{ $patient->room_number ?? 'No Room' }}
+                                        </span>
+                                        <a href="{{ route('patients.show', $patient->id) }}" class="btn btn-sm btn-outline-primary ms-2">
+                                            See Details
+                                        </a>
                                     </div>
                                 </div>
                             </div>
-                        @endforeach
+                        @empty
+                            <div class="alert alert-info">
+                                No patients currently assigned to you.
+                            </div>
+                        @endforelse
                     </div>
+                    
 
                     <!-- Calendar & Quick Actions -->
                     <div class="col-md-4 calendar-container">

@@ -304,13 +304,20 @@ class DashboardController extends Controller
         $pendingReports = \App\Models\ProgressReport::where('reported_by', $user->id)
             ->whereDate('created_at', '<', now()->subDays(30))
             ->count();
+
+            $patients = Patient::where('assigned_nurse_id', $user->id)
+            // ->where('status', 'active')
+            ->orderBy('admission_date', 'desc')
+            ->take(5) // Show only latest 5 patients
+            ->get();
     
         return view('nurse.dashboard', compact(
             'assignedPatients',
             'pendingReports',
             'patientsCount',
             'reportsCount',
-            'incidentsCount'
+            'incidentsCount',
+            'patients'
         ));
     }
     
