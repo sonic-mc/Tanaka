@@ -14,8 +14,8 @@
                 <div class="row g-2">
                     @foreach([
                         'patients','discharges','evaluations','incident_reports',
-                        'progress_reports','billing_statements','therapy_sessions',
-                        'medications','invoices','payments','prescriptions','appointments'
+                        'progress_reports','therapy_sessions',
+                        'invoices','payments'
                     ] as $module)
                         <div class="col-md-4">
                             <div class="form-check">

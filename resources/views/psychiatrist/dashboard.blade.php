@@ -163,52 +163,7 @@
         </div>
     </div>
 
-    <div class="col-lg-4 mb-4">
-        <div class="card modern-card chart-card">
-            <h5 class="chart-title">Patient Progress Distribution</h5>
-            <div class="chart-wrapper d-flex justify-content-center">
-                <canvas id="progressChart"></canvas>
-            </div>
-            <div class="row text-center mt-3">
-                <div class="col-4">
-                    <div class="metric-value text-success">{{ $data['improved'] }}%</div>
-                    <div class="metric-label">Improved</div>
-                </div>
-                <div class="col-4">
-                    <div class="metric-value text-warning">{{ $data['stable'] }}%</div>
-                    <div class="metric-label">Stable</div>
-                </div>
-                <div class="col-4">
-                    <div class="metric-value text-danger">{{ $data['declined'] }}%</div>
-                    <div class="metric-label">Declined</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-    const ctx = document.getElementById('progressChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Improved', 'Stable', 'Declined'],
-            datasets: [{
-                data: [{{ $data['improved'] }}, {{ $data['stable'] }}, {{ $data['declined'] }}],
-                backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            cutout: '70%',
-            plugins: {
-                legend: { position: 'bottom' }
-            }
-        }
-    });
-    </script>
-    
+    @include('psychiatrist.partials.progress_distribution', ['progressDistribution' => $progressDistribution])
 </div>
 
 <!-- Notifications & Decision Support -->

@@ -260,41 +260,7 @@ class DashboardController extends Controller
 
         $incidentsCount = \App\Models\IncidentReport::count();
 
-         // Fetch all progress reports
-         $reports = ProgressReport::all();
-
-         $improved = 0;
-         $stable = 0;
-         $declined = 0;
- 
-         foreach ($reports as $report) {
-             // Calculate average symptom severity (ignore nulls)
-             $symptoms = collect([
-                 $report->depressed_mood,
-                 $report->anxiety,
-                 $report->sleep_disturbance,
-                 $report->appetite_changes,
-                 $report->suicidal_ideation,
-             ])->filter()->avg();
- 
-             if (!$symptoms) continue;
- 
-             if ($symptoms <= 4) {
-                 $improved++;
-             } elseif ($symptoms <= 6) {
-                 $stable++;
-             } else {
-                 $declined++;
-             }
-         }
- 
-         $total = max(($improved + $stable + $declined), 1); // avoid divide-by-zero
- 
-         $data = [
-             'improved' => round(($improved / $total) * 100, 1),
-             'stable' => round(($stable / $total) * 100, 1),
-             'declined' => round(($declined / $total) * 100, 1),
-         ];
+        $progressDistribution = app(\App\Services\ProgressAnalyticsService::class)->distributionForUser($user, 30);
 
         return view('psychiatrist.dashboard', compact(
             'assignedPatients',
@@ -309,7 +275,7 @@ class DashboardController extends Controller
             'incidentsCount',
             'notificationCount',
             'notifications',
-            'data'
+            'progressDistribution'
         ));
     }
 
