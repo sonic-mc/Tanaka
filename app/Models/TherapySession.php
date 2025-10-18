@@ -27,19 +27,18 @@ class TherapySession extends Model
     ];
 
     protected $casts = [
-        'goals_progress' => 'array',
         'session_start' => 'datetime',
         'session_end' => 'datetime',
+        'goals_progress' => 'array',
     ];
 
-    // Relationships
     public function patient()
     {
-        return $this->belongsTo(Patient::class);
+        return $this->belongsTo(\App\Models\Patient::class);
     }
 
     public function clinician()
     {
-        return $this->belongsTo(User::class, 'clinician_id');
+        return $this->belongsTo(\App\Models\User::class, 'clinician_id');
     }
 }

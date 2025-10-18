@@ -82,4 +82,10 @@ class User extends Authenticatable
     {
         $this->syncRoles([$roleName]);
     }
+
+      // Staff considered “clinicians” for assignment/selection purposes
+      public function scopeClinicalStaff($query)
+      {
+          return $query->whereIn('role', ['psychiatrist', 'nurse']);
+      }
 }

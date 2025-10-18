@@ -130,28 +130,24 @@
         <div class="card modern-card stats-card h-100 p-4">
             <div class="stats-number">{{ $patientCount }}</div>
             <div class="stats-label">Active Patients</div>
-            <div class="small">+5% vs last month</div>
         </div>
     </div>
     <div class="col-lg-3 col-md-6 mb-4">
         <div class="card modern-card stats-card h-100 p-4">
             <div class="stats-number">{{ $therapySessionCount }}</div>
             <div class="stats-label">Therapy Sessions</div>
-            <div class="small">Today’s scheduled: 8</div>
         </div>
     </div>
     <div class="col-lg-3 col-md-6 mb-4">
         <div class="card modern-card stats-card h-100 p-4">
             <div class="stats-number">{{ $evaluationCount }}</div>
             <div class="stats-label">Evaluations</div>
-            <div class="small">3 pending review</div>
         </div>
     </div>
     <div class="col-lg-3 col-md-6 mb-4">
         <div class="card modern-card stats-card h-100 p-4">
             <div class="stats-number">{{ $incidentsCount }}</div>
             <div class="stats-label">Incidents</div>
-            {{-- <div class="small">Critical: {{ $criticalIncidents }}</div> --}}
         </div>
     </div>
 </div>
@@ -175,50 +171,49 @@
             </div>
             <div class="row text-center mt-3">
                 <div class="col-4">
-                    <div class="metric-value text-success">40%</div>
+                    <div class="metric-value text-success">{{ $data['improved'] }}%</div>
                     <div class="metric-label">Improved</div>
                 </div>
                 <div class="col-4">
-                    <div class="metric-value text-warning">45%</div>
+                    <div class="metric-value text-warning">{{ $data['stable'] }}%</div>
                     <div class="metric-label">Stable</div>
                 </div>
                 <div class="col-4">
-                    <div class="metric-value text-danger">15%</div>
+                    <div class="metric-value text-danger">{{ $data['declined'] }}%</div>
                     <div class="metric-label">Declined</div>
                 </div>
             </div>
         </div>
     </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+    const ctx = document.getElementById('progressChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Improved', 'Stable', 'Declined'],
+            datasets: [{
+                data: [{{ $data['improved'] }}, {{ $data['stable'] }}, {{ $data['declined'] }}],
+                backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: '70%',
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+    </script>
+    
 </div>
 
 <!-- Notifications & Decision Support -->
 <div class="row mb-5">
-    <div class="col-lg-6 mb-4">
-        <div class="card modern-card chart-card">
-            <h5 class="chart-title">Notifications</h5>
-            <div class="activity-item d-flex align-items-center mb-3">
-                <i class="fas fa-user-md text-primary me-3"></i>
-                <div>
-                    <div class="fw-semibold">New evaluation request</div>
-                    <small class="text-muted">Patient: Sarah K</small>
-                </div>
-            </div>
-            <div class="activity-item d-flex align-items-center mb-3">
-                <i class="fas fa-exclamation-circle text-danger me-3"></i>
-                <div>
-                    <div class="fw-semibold">Crisis incident reported</div>
-                    <small class="text-muted">Emergency intervention needed</small>
-                </div>
-            </div>
-            <div class="activity-item d-flex align-items-center">
-                <i class="fas fa-bell text-warning me-3"></i>
-                <div>
-                    <div class="fw-semibold">Therapy session reminder</div>
-                    <small class="text-muted">John D - 3PM today</small>
-                </div>
-            </div>
-        </div>
-    </div>
+    @include('dashboard.partials.notifications', ['notifications' => $notifications, 'allowMarkAll' => true])
 
     <div class="col-lg-6 mb-4">
         <div class="card modern-card chart-card">

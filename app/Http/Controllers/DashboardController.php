@@ -233,45 +233,86 @@ class DashboardController extends Controller
 
     protected function psychiatristDashboard()
     {
-        $assignedPatients = \App\Models\Patient::whereHas('evaluations', function ($q) {
-            $q->where('evaluated_by', Auth::id());
+        $user = Auth::user();
+        $notificationService = app(\App\Services\DashboardNotificationService::class);
+
+        // Counts and metrics
+        $assignedPatients = \App\Models\Patient::whereHas('evaluations', function ($q) use ($user) {
+            $q->where('evaluated_by', $user->id);
         })->count();
 
-        $patientCount = Patient::count();
-        $therapySessionCount = TherapySession::count();
-        $evaluationCount = Evaluation::count();
+        $patientCount = \App\Models\Patient::count();
+        $therapySessionCount = \App\Models\TherapySession::count();
+        $evaluationCount = \App\Models\Evaluation::count();
+        $progressReportCount = \App\Models\ProgressReport::count();
+        $dischargeCount = \App\Models\Discharge::count();
+        $billingCount = \App\Models\BillingStatement::count();
+        $paymentCount = \App\Models\Payment::count();
 
-        $progressReportCount = ProgressReport::count();
+        // Notifications (Laravel database notifications)
+        $notificationCount = $user->unreadNotifications()->count();
+        $notifications = $notificationService->getForUser($user, 10);
 
-        $dischargeCount = Discharge::count();
-
-        $billingCount = BillingStatement::count();
-
-        $paymentCount = Payment::count();
-
-        $notificationCount = Auth::user()->unreadNotifications()->count();
-
-        $upcomingEvaluations = \App\Models\Evaluation::where('evaluated_by', Auth::id())
+        // Recent/upcoming evaluator-specific metric
+        $upcomingEvaluations = \App\Models\Evaluation::where('evaluated_by', $user->id)
             ->whereDate('created_at', '>=', now()->subDays(7))
             ->count();
 
-        $incidentsCount = IncidentReport::count();
-        // $criticalIncidents = IncidentReport::where('severity', 'critical')->count();
+        $incidentsCount = \App\Models\IncidentReport::count();
 
-        return view('psychiatrist.dashboard', compact('assignedPatients',
-         'upcomingEvaluations',
-          'patientCount',
-           'therapySessionCount',
+         // Fetch all progress reports
+         $reports = ProgressReport::all();
+
+         $improved = 0;
+         $stable = 0;
+         $declined = 0;
+ 
+         foreach ($reports as $report) {
+             // Calculate average symptom severity (ignore nulls)
+             $symptoms = collect([
+                 $report->depressed_mood,
+                 $report->anxiety,
+                 $report->sleep_disturbance,
+                 $report->appetite_changes,
+                 $report->suicidal_ideation,
+             ])->filter()->avg();
+ 
+             if (!$symptoms) continue;
+ 
+             if ($symptoms <= 4) {
+                 $improved++;
+             } elseif ($symptoms <= 6) {
+                 $stable++;
+             } else {
+                 $declined++;
+             }
+         }
+ 
+         $total = max(($improved + $stable + $declined), 1); // avoid divide-by-zero
+ 
+         $data = [
+             'improved' => round(($improved / $total) * 100, 1),
+             'stable' => round(($stable / $total) * 100, 1),
+             'declined' => round(($declined / $total) * 100, 1),
+         ];
+
+        return view('psychiatrist.dashboard', compact(
+            'assignedPatients',
+            'upcomingEvaluations',
+            'patientCount',
+            'therapySessionCount',
             'evaluationCount',
             'progressReportCount',
             'dischargeCount',
-             'billingCount',
-              'paymentCount',
-                'incidentsCount',
-                    // 'criticalIncidents',
-               'notificationCount'
-            ));
+            'billingCount',
+            'paymentCount',
+            'incidentsCount',
+            'notificationCount',
+            'notifications',
+            'data'
+        ));
     }
+
 
     protected function nurseDashboard()
     {

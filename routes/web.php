@@ -22,6 +22,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\AdmissionController;
 use App\Http\Controllers\UsersController;
+use App\Http\Controllers\DashboardNotificationController;
+
 
 
 // Homepage
@@ -110,11 +112,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('logs/export', [AuditLogController::class, 'export'])->name('logs.export');
 });
 
-// Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-//     Route::get('backups', [BackupController::class, 'index'])->name('backups.index');
-//     Route::post('backups', [BackupController::class, 'store'])->name('backups.store');
-//     Route::post('backups/{id}/restore', [BackupController::class, 'restore'])->name('backups.restore');
-// });
+ // Database notifications actions
+ Route::post('/dashboard/notifications/{notification}/read', [DashboardNotificationController::class, 'markAsRead'])
+ ->name('dashboard.notifications.read');
+Route::post('/dashboard/notifications/read-all', [DashboardNotificationController::class, 'markAllAsRead'])
+ ->name('dashboard.notifications.markAll');
+
 
 
 Route::middleware(['auth', 'role:admin|finance'])->prefix('admin')->name('admin.')->group(function () {
