@@ -40,6 +40,13 @@
                 Patient Management
             </button>
         </li>
+
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="discharged-tab" data-bs-toggle="tab" data-bs-target="#discharged" type="button" role="tab">
+                Discharged Patients
+            </button>
+        </li>
+        
         @endif
     </ul>
 
@@ -340,6 +347,65 @@
                 
             </form>
         </div>
+
+        <div class="tab-pane fade" id="discharged" role="tabpanel">
+            <form method="GET" class="row g-3 mb-3">
+                <div class="col-md-3">
+                    <input type="text" name="discharged_search" class="form-control" placeholder="Search name or code..." value="{{ request('discharged_search') }}">
+                </div>
+                <div class="col-md-2">
+                    <select name="discharged_gender" class="form-select">
+                        <option value="">Gender</option>
+                        <option value="male" {{ request('discharged_gender') == 'male' ? 'selected' : '' }}>Male</option>
+                        <option value="female" {{ request('discharged_gender') == 'female' ? 'selected' : '' }}>Female</option>
+                        <option value="other" {{ request('discharged_gender') == 'other' ? 'selected' : '' }}>Other</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="discharged_care_level" class="form-select">
+                        <option value="">Care Level</option>
+                        @foreach($careLevels as $level)
+                            <option value="{{ $level->id }}" {{ request('discharged_care_level') == $level->id ? 'selected' : '' }}>
+                                {{ $level->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3 text-end">
+                    <button type="submit" class="btn btn-outline-primary">Filter</button>
+                </div>
+            </form>
+        
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>Care Level</th>
+                        <th>Discharged</th>
+                        <th>Room</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($dischargedPatients as $patient)
+                        <tr>
+                            <td>{{ $patient->patient_code }}</td>
+                            <td>{{ $patient->first_name }} {{ $patient->last_name }}</td>
+                            <td>{{ $patient->careLevel->name ?? '—' }}</td>
+                            <td><span class="badge bg-danger">{{ ucfirst($patient->status) }}</span></td>
+                            <td>{{ $patient->room_number }}</td>
+                            <td>
+                                <a href="{{ route('patients.show', $patient) }}" class="btn btn-sm btn-outline-primary">View</a>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="6" class="text-muted">No discharged patients found.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        
         @endif
 
         @push('scripts')

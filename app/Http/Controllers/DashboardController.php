@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
-use App\Models\Patient;
+use App\Models\PatientDetail;
+use App\Models\Admission;
+use App\Models\PatientEvaluation;
 use App\Models\Appointment;
 use App\Models\ProgressReport;
 use App\Models\IncidentReport;
@@ -17,257 +19,206 @@ use App\Models\Medication;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Notification;
-use App\Models\Evaluation;
-use App\Models\Staff;
-use App\Models\Doctor;
-use App\Models\PsychoSocialAssessment;
-use App\Models\TherapySession;
-use App\Models\Nurse;
-use App\Models\Psychiatrist;
-use App\Models\DoctorNote;
-use App\Models\StaffSchedule;
-use App\Models\Bed;
-use App\Models\Ward;
-use App\Models\Discharge;
-use App\Models\VitalSign;
-use App\Models\Allergy;
-use App\Models\Immunization;
 use App\Models\BillingStatement;
-use App\Models\MedicalHistory;
-use App\Models\LabResult;
-use App\Models\RadiologyReport;
+use App\Models\Discharge;
 use App\Traits\AuditLogger;
 use Carbon\Carbon;
 use App\Models\AuditLog;
 
-
-
-
-
 class DashboardController extends Controller
 {
-
     use AuditLogger;
-    
+
     public function index()
     {
         $user = Auth::user();
-    
+
         if (! $user) {
             return redirect()->route('login');
         }
-    
-        // Check if user has no assigned roles
+
+        // If user has no roles, default dashboard
         if ($user->roles->isEmpty()) {
             return $this->defaultDashboard();
         }
-    
-        // Otherwise, get the user's primary role
+
         $role = $user->roles->first()->name;
-    
+
         switch ($role) {
             case 'admin':
                 return $this->adminDashboard();
-    
             case 'psychiatrist':
                 return $this->psychiatristDashboard();
-    
             case 'nurse':
                 return $this->nurseDashboard();
-    
+            case 'clinician':
+                return $this->clinicianDashboard();
             default:
                 return $this->defaultDashboard();
         }
     }
-    
 
     protected function adminDashboard()
     {
-        // Core metrics
-        $patientCount = Patient::count();
+        // Patients now come from patient_details
+        $patientCount = PatientDetail::count();
+
+        // Staff count by role
         $staffCount = User::whereIn('role', ['nurse', 'psychiatrist', 'doctor'])->count();
+
         $pendingTasks = Task::where('status', 'pending')->count();
         $criticalIncidents = IncidentReport::where('description', 'like', '%critical%')->count();
-    
-        // Patients
-        $recentPatients = Patient::latest()->take(5)->get(); // last 5 registered
-        $activePatients = Patient::where('status', 'active')->count();
-    
+
+        // Recent patients (from patient_details)
+        $recentPatients = PatientDetail::latest()->take(5)->get();
+
+        // "Active patients" -> patients with active admissions (distinct patients)
+        $activePatients = Admission::where('status', 'active')->distinct('patient_id')->count();
+
         // Staff
         $recentStaff = User::whereIn('role', ['nurse', 'psychiatrist', 'doctor'])
-                            ->latest()
-                            ->take(5)
-                            ->get();
-    
+            ->latest()
+            ->take(5)
+            ->get();
+
         // Appointments
         $upcomingAppointments = Appointment::whereDate('date', '>=', now())
-                                            ->orderBy('date', 'asc')
-                                            ->take(5)
-                                            ->get();
-                                            
+            ->orderBy('date', 'asc')
+            ->take(5)
+            ->get();
+
         $todayAppointments = Appointment::whereDate('date', today())->count();
-    
+
         // Medications / Prescriptions
         $activePrescriptions = Prescription::where('status', 'active')->count();
         $lowStockMedications = Medication::where('quantity', '<=', 10)->get();
-    
+
         // Incidents
         $recentIncidents = IncidentReport::latest()->take(5)->get();
-    
+
         // Billing & Payments
         $unpaidInvoices = Invoice::where('status', 'unpaid')->count();
         $recentPayments = Payment::latest()->take(5)->get();
-    
-        // Notifications & Alerts
+
+        // Notifications
         $unreadNotifications = Notification::whereNull('read_at')->count();
         $recentNotifications = Notification::latest()->take(5)->get();
 
-        $therapySessionCount = TherapySession::count();
-
-        $evaluationCount = Evaluation::count();
-
+        $therapySessionCount = \App\Models\TherapySession::count();
         $progressReportCount = ProgressReport::count();
-
         $dischargeCount = Discharge::count();
-
         $billingCount = BillingStatement::count();
 
-        $paymentCount = Payment::count();
+        // Count of payments received
+        $receivedPaymentsCount = Payment::whereNotNull('paid_at')->count();
 
-        $notificationCount = Auth::user()->unreadNotifications()->count();
-    
-        // Roles & permissions
+        // Roles & permissions and users
         $roles = Role::all();
         $permissions = Permission::all();
-        $users = User::with('roles', 'permissions')->get();
 
-         // Get users with no roles
-         $users = User::doesntHave('roles')->get();
-    
-          // Count users without roles
-        $noRoleCount = $users->count();
+        // Users with roles/permissions (full set)
+        $usersWithRoles = User::with('roles', 'permissions')->get();
 
-         // Financial KPIs
-         $totalRevenue = Payment::whereNotNull('paid_at')->sum('amount');     // money received
-         $paymentCount = Payment::whereNotNull('paid_at')->count();           // payments received
- 
-         // Build last 6 months series (including current month)
-         $months = collect(range(0, 5))
-             ->map(fn ($i) => Carbon::now()->startOfMonth()->subMonths(5 - $i));
- 
-         // Aggregate invoices by month (issue_date)
-         $invoiceMonthly = Invoice::selectRaw("DATE_FORMAT(issue_date, '%Y-%m') as ym, SUM(amount) as total")
-             ->whereDate('issue_date', '>=', $months->first()->toDateString())
-             ->groupBy('ym')
-             ->orderBy('ym')
-             ->pluck('total', 'ym');
- 
-         // Aggregate payments by month (paid_at)
-         $paymentMonthly = Payment::selectRaw("DATE_FORMAT(paid_at, '%Y-%m') as ym, SUM(amount) as total")
-             ->whereNotNull('paid_at')
-             ->whereDate('paid_at', '>=', $months->first()->toDateString())
-             ->groupBy('ym')
-             ->orderBy('ym')
-             ->pluck('total', 'ym');
- 
-         // Build chart arrays in fixed month order
-         $chartLabels = $months->map(fn ($d) => $d->format('M Y'))->all();
-         $chartKeys   = $months->map(fn ($d) => $d->format('Y-m'))->all();
- 
-         $invoicesSeries = array_map(fn ($ym) => (float) ($invoiceMonthly[$ym] ?? 0), $chartKeys);
-         $paymentsSeries = array_map(fn ($ym) => (float) ($paymentMonthly[$ym] ?? 0), $chartKeys);
- 
-         $chart = [
-             'labels'   => $chartLabels,
-             'invoices' => $invoicesSeries,
-             'payments' => $paymentsSeries,
-         ];
+        // Users without any roles
+        $usersNoRoles = User::doesntHave('roles')->get();
+        $noRoleCount = $usersNoRoles->count();
 
-         // Recent activity from audit logs
+        // Financial KPIs
+        $totalRevenue = Payment::whereNotNull('paid_at')->sum('amount');
+
+        // Last 6 months series
+        $months = collect(range(0, 5))
+            ->map(fn ($i) => Carbon::now()->startOfMonth()->subMonths(5 - $i));
+
+        $invoiceMonthly = Invoice::selectRaw("DATE_FORMAT(issue_date, '%Y-%m') as ym, SUM(amount) as total")
+            ->whereDate('issue_date', '>=', $months->first()->toDateString())
+            ->groupBy('ym')
+            ->orderBy('ym')
+            ->pluck('total', 'ym');
+
+        $paymentMonthly = Payment::selectRaw("DATE_FORMAT(paid_at, '%Y-%m') as ym, SUM(amount) as total")
+            ->whereNotNull('paid_at')
+            ->whereDate('paid_at', '>=', $months->first()->toDateString())
+            ->groupBy('ym')
+            ->orderBy('ym')
+            ->pluck('total', 'ym');
+
+        $chartLabels = $months->map(fn ($d) => $d->format('M Y'))->all();
+        $chartKeys   = $months->map(fn ($d) => $d->format('Y-m'))->all();
+
+        $invoicesSeries = array_map(fn ($ym) => (float) ($invoiceMonthly[$ym] ?? 0), $chartKeys);
+        $paymentsSeries = array_map(fn ($ym) => (float) ($paymentMonthly[$ym] ?? 0), $chartKeys);
+
+        $chart = [
+            'labels'   => $chartLabels,
+            'invoices' => $invoicesSeries,
+            'payments' => $paymentsSeries,
+        ];
+
+        // Recent audit logs
         $auditLogs = AuditLog::with('user')
-        ->orderByDesc('timestamp')
-        ->limit(5)
-        ->get();
+            ->orderByDesc('timestamp')
+            ->limit(5)
+            ->get();
 
-    // “New” count for the badge (last 24 hours)
-    $notificationCount = AuditLog::where('timestamp', '>=', now()->subDay())->count();
- 
-    
-        return view('admin.dashboard', compact(
-            'patientCount',
-            'activePatients',
-            'recentPatients',
-            'staffCount',
-            'recentStaff',
-            'pendingTasks',
-            'criticalIncidents',
-            'recentIncidents',
-            'upcomingAppointments',
-            'todayAppointments',
-            'activePrescriptions',
-            'lowStockMedications',
-            'unpaidInvoices',
-            'recentPayments',
-            'unreadNotifications',
-            'recentNotifications',
-            'therapySessionCount',
-            'evaluationCount',
-            'progressReportCount',
-            'dischargeCount',
-            'billingCount',
-            'paymentCount',
-            'notificationCount',
-            'roles',
-            'permissions',
-            'users',
-            'noRoleCount',
-            'totalRevenue',
-            'paymentCount',
-            'chart',
-            'auditLogs',
+        // Badge count: new audit entries in last 24h
+        $notificationCount = AuditLog::where('timestamp', '>=', now()->subDay())->count();
 
-
-        ));
+        return view('admin.dashboard', [
+            'patientCount' => $patientCount,
+            'activePatients' => $activePatients,
+            'recentPatients' => $recentPatients,
+            'staffCount' => $staffCount,
+            'recentStaff' => $recentStaff,
+            'pendingTasks' => $pendingTasks,
+            'criticalIncidents' => $criticalIncidents,
+            'recentIncidents' => $recentIncidents,
+            'upcomingAppointments' => $upcomingAppointments,
+            'todayAppointments' => $todayAppointments,
+            'activePrescriptions' => $activePrescriptions,
+            'lowStockMedications' => $lowStockMedications,
+            'unpaidInvoices' => $unpaidInvoices,
+            'recentPayments' => $recentPayments,
+            'unreadNotifications' => $unreadNotifications,
+            'recentNotifications' => $recentNotifications,
+            'therapySessionCount' => $therapySessionCount,
+            'progressReportCount' => $progressReportCount,
+            'dischargeCount' => $dischargeCount,
+            'billingCount' => $billingCount,
+            'paymentCount' => $receivedPaymentsCount,
+            'notificationCount' => $notificationCount,
+            'roles' => $roles,
+            'permissions' => $permissions,
+            'users' => $usersWithRoles,
+            'noRoleCount' => $noRoleCount,
+            'totalRevenue' => $totalRevenue,
+            'chart' => $chart,
+            'auditLogs' => $auditLogs,
+        ]);
     }
-    
 
     protected function psychiatristDashboard()
     {
         $user = Auth::user();
         $notificationService = app(\App\Services\DashboardNotificationService::class);
 
-        // Counts and metrics
-        $assignedPatients = \App\Models\Patient::whereHas('evaluations', function ($q) use ($user) {
-            $q->where('evaluated_by', $user->id);
-        })->count();
-
-        $patientCount = \App\Models\Patient::count();
+        $patientCount = PatientDetail::count();
         $therapySessionCount = \App\Models\TherapySession::count();
-        $evaluationCount = \App\Models\Evaluation::count();
-        $progressReportCount = \App\Models\ProgressReport::count();
-        $dischargeCount = \App\Models\Discharge::count();
-        $billingCount = \App\Models\BillingStatement::count();
-        $paymentCount = \App\Models\Payment::count();
+        $progressReportCount = ProgressReport::count();
+        $dischargeCount = Discharge::count();
+        $billingCount = BillingStatement::count();
+        $paymentCount = Payment::count();
 
-        // Notifications (Laravel database notifications)
         $notificationCount = $user->unreadNotifications()->count();
         $notifications = $notificationService->getForUser($user, 10);
 
-        // Recent/upcoming evaluator-specific metric
-        $upcomingEvaluations = \App\Models\Evaluation::where('evaluated_by', $user->id)
-            ->whereDate('created_at', '>=', now()->subDays(7))
-            ->count();
-
-        $incidentsCount = \App\Models\IncidentReport::count();
+        $incidentsCount = IncidentReport::count();
 
         $progressDistribution = app(\App\Services\ProgressAnalyticsService::class)->distributionForUser($user, 30);
 
         return view('psychiatrist.dashboard', compact(
-            'assignedPatients',
-            'upcomingEvaluations',
             'patientCount',
             'therapySessionCount',
-            'evaluationCount',
             'progressReportCount',
             'dischargeCount',
             'billingCount',
@@ -279,48 +230,70 @@ class DashboardController extends Controller
         ));
     }
 
-
     protected function nurseDashboard()
     {
         $user = Auth::user();
-    
-        // ✅ Count only patients assigned to this nurse
-        $assignedPatients = \App\Models\Patient::where('assigned_nurse_id', $user->id)
-            ->count();
-    
-        // You can also use your relationship (same result, cleaner):
-        $patientsCount = $user->assignedPatients()
-            ->count();
-    
         $today = now()->toDateString();
-    
-        $reportsCount = \App\Models\ProgressReport::whereDate('created_at', $today)
+
+        // Count distinct patients this nurse is assigned to through active admissions
+        $assignedPatients = Admission::where('status', 'active')
+            ->whereHas('nurseAssignments', fn($q) => $q->where('nurse_id', $user->id))
+            ->distinct('patient_id')
+            ->count();
+
+        $patientsCount = $assignedPatients;
+        $admissionsCount = \App\Models\Admission::count();
+
+        $reportsCount = ProgressReport::whereDate('created_at', $today)
             ->where('reported_by', $user->id)
             ->count();
-    
-        $incidentsCount = \App\Models\IncidentReport::where('reported_by', $user->id)
-            ->count();
-    
-        $pendingReports = \App\Models\ProgressReport::where('reported_by', $user->id)
+
+        $incidentsCount = IncidentReport::where('reported_by', $user->id)->count();
+
+        $pendingReports = ProgressReport::where('reported_by', $user->id)
             ->whereDate('created_at', '<', now()->subDays(30))
             ->count();
 
-            $patients = Patient::where('assigned_nurse_id', $user->id)
-            // ->where('status', 'active')
-            ->orderBy('admission_date', 'desc')
-            ->take(5) // Show only latest 5 patients
+        // Last 5 assigned admissions with patient details
+        $assignedAdmissions = Admission::where('status', 'active')
+            ->whereHas('nurseAssignments', fn($q) => $q->where('nurse_id', $user->id))
+            ->with('patient')
+            ->orderByDesc('admission_date')
+            ->limit(5)
             ->get();
-    
+
+        // Optional calendar events array (pass if you want to light up your calendar)
+        $calendarEvents = []; // ['2025-10-03' => ['Workshop']]
+
         return view('nurse.dashboard', compact(
             'assignedPatients',
             'pendingReports',
             'patientsCount',
             'reportsCount',
             'incidentsCount',
-            'patients'
+            'assignedAdmissions',
+            'calendarEvents',
+            'admissionsCount'
+
         ));
     }
-    
+
+    public function clinicianDashboard()
+    {
+        $today = Carbon::today();
+
+        $newPatientsToday = PatientDetail::whereDate('created_at', $today)->count();
+        $activeAdmissions = Admission::where('status', 'active')->with('patient')->get();
+        $dischargesToday = Admission::where('status', 'discharged')->whereDate('updated_at', $today)->with('patient')->get();
+        $pendingEvaluations = PatientEvaluation::whereDate('evaluation_date', $today)->with('patient')->get();
+
+        return view('clinician.dashboard', compact(
+            'newPatientsToday',
+            'activeAdmissions',
+            'dischargesToday',
+            'pendingEvaluations'
+        ));
+    }
 
     protected function defaultDashboard()
     {

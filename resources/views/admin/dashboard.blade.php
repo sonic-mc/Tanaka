@@ -3,7 +3,7 @@
 @section('header')
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="fw-bold text-dark mb-1">Healthcare Dashboard</h2>
+            <h2 class="fw-bold text-dark mb-1">Admin Dashboard</h2>
             <p class="text-muted mb-0">Monitor and manage your healthcare facility operations</p>
         </div>
         <div class="d-flex gap-2">
@@ -228,7 +228,7 @@
     </div>
     <div class="col-lg-3 col-md-6 mb-4">
         <div class="card modern-card metric-card h-100">
-            <div class="metric-value">{{ $evaluationCount }}</div>
+            {{-- <div class="metric-value">{{ $evaluationCount }}</div> --}}
             <div class="metric-label">Evaluations</div>
             <div class="small">3 pending review</div>
         </div>

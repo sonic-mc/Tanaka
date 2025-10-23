@@ -161,7 +161,6 @@
 
         @if(auth()->user()->hasAnyRole(['psychiatrist','nurse']))
             <li class="nav-item"><a href="{{ route('patients.index') }}" class="nav-link {{ isActive('patients*') }}"><i class="bi bi-person-lines-fill me-2"></i> Patients</a></li>
-            <li class="nav-item"><a href="{{ route('evaluations.index') }}" class="nav-link {{ isActive('evaluations*') }}"><i class="bi bi-clipboard-pulse me-2"></i> Evaluations</a></li>
             <li class="nav-item"><a href="{{ route('progress-reports.index') }}" class="nav-link {{ isActive('progress-reports*') }}"><i class="bi bi-bar-chart-line-fill me-2"></i> Progress Monitoring</a></li>
             <li class="nav-item"><a href="{{ route('therapy-sessions.index') }}" class="nav-link {{ isActive('therapy-sessions*') }}"><i class="bi bi-calendar-check me-2"></i> Therapy Sessions</a></li>
             <li class="nav-item"><a href="{{ route('incidents.index') }}" class="nav-link {{ isActive('incidents*') }}"><i class="bi bi-exclamation-triangle me-2"></i> Incidents</a></li>
@@ -213,6 +212,25 @@
         </li>
         
     @endif
+
+    <li class="nav-item">
+        <a href="{{ route('evaluations.index') }}" class="nav-link {{ request()->routeIs('evaluations.*') ? 'active' : '' }}">
+            <i class="bi bi-journal-medical me-2"></i> Patient Evaluations
+        </a>
+    </li>
+
+    <li class="nav-item">
+        <a href="{{ route('admissions.index') }}" class="nav-link {{ request()->routeIs('admissions.*') ? 'active' : '' }}">
+            <i class="bi bi-hospital me-2"></i> Admissions Management
+        </a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ route('nurse-assignments.index') }}" class="nav-link {{ request()->routeIs('nurse-assignments.*') ? 'active' : '' }}">
+            <i class="bi bi-person-badge me-2"></i> Nurse Assignments
+        </a>
+    </li>
+    
+    
     
     </ul>
 </nav>

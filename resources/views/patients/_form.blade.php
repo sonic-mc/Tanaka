@@ -1,0 +1,198 @@
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <label class="form-label">Patient Code <span class="text-danger">*</span></label>
+        <input type="text" name="patient_code" class="form-control"
+               value="{{ old('patient_code', $patient->patient_code ?? '') }}" required>
+    </div>
+    <div class="col-md-3 mb-3">
+        <label class="form-label">First Name <span class="text-danger">*</span></label>
+        <input type="text" name="first_name" class="form-control"
+               value="{{ old('first_name', $patient->first_name ?? '') }}" required>
+    </div>
+    <div class="col-md-3 mb-3">
+        <label class="form-label">Middle Name</label>
+        <input type="text" name="middle_name" class="form-control"
+               value="{{ old('middle_name', $patient->middle_name ?? '') }}">
+    </div>
+    <div class="col-md-3 mb-3">
+        <label class="form-label">Last Name <span class="text-danger">*</span></label>
+        <input type="text" name="last_name" class="form-control"
+               value="{{ old('last_name', $patient->last_name ?? '') }}" required>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <label class="form-label">Gender <span class="text-danger">*</span></label>
+        <select name="gender" class="form-select" required>
+            @php $g = old('gender', $patient->gender ?? ''); @endphp
+            <option value="">-- Select --</option>
+            <option value="male" {{ $g === 'male' ? 'selected' : '' }}>Male</option>
+            <option value="female" {{ $g === 'female' ? 'selected' : '' }}>Female</option>
+            <option value="other" {{ $g === 'other' ? 'selected' : '' }}>Other</option>
+        </select>
+    </div>
+    <div class="col-md-3 mb-3">
+        <label class="form-label">Date of Birth</label>
+        <input type="date" name="dob" class="form-control"
+               value="{{ old('dob', optional($patient->dob)->format('Y-m-d')) }}">
+    </div>
+    <div class="col-md-3 mb-3">
+        <label class="form-label">National ID Number</label>
+        <input type="text" name="national_id_number" class="form-control"
+               value="{{ old('national_id_number', $patient->national_id_number ?? '') }}">
+    </div>
+    <div class="col-md-3 mb-3">
+        <label class="form-label">Passport Number</label>
+        <input type="text" name="passport_number" class="form-control"
+               value="{{ old('passport_number', $patient->passport_number ?? '') }}">
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <label class="form-label">Photo</label>
+        <input type="file" name="photo" class="form-control" accept=".jpg,.jpeg,.png,.webp">
+        @if(!empty($patient->photo))
+            <div class="mt-2">
+                <img src="{{ asset('storage/'.$patient->photo) }}" alt="Current photo" width="80" height="80" class="rounded object-fit-cover">
+            </div>
+        @endif
+    </div>
+    <div class="col-md-4 mb-3">
+        <label class="form-label">Email</label>
+        <input type="email" name="email" class="form-control"
+               value="{{ old('email', $patient->email ?? '') }}">
+    </div>
+    <div class="col-md-4 mb-3">
+        <label class="form-label">Contact Number</label>
+        <input type="text" name="contact_number" class="form-control"
+               value="{{ old('contact_number', $patient->contact_number ?? '') }}">
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Residential Address</label>
+        <input type="text" name="residential_address" class="form-control"
+               value="{{ old('residential_address', $patient->residential_address ?? '') }}">
+    </div>
+    <div class="col-md-3 mb-3">
+        <label class="form-label">Race</label>
+        <input type="text" name="race" class="form-control"
+               value="{{ old('race', $patient->race ?? '') }}">
+    </div>
+    <div class="col-md-3 mb-3">
+        <label class="form-label">Religion</label>
+        <input type="text" name="religion" class="form-control"
+               value="{{ old('religion', $patient->religion ?? '') }}">
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <label class="form-label">Language</label>
+        <input type="text" name="language" class="form-control"
+               value="{{ old('language', $patient->language ?? '') }}">
+    </div>
+    <div class="col-md-3 mb-3">
+        <label class="form-label">Denomination</label>
+        <input type="text" name="denomination" class="form-control"
+               value="{{ old('denomination', $patient->denomination ?? '') }}">
+    </div>
+    <div class="col-md-3 mb-3">
+        <label class="form-label">Marital Status</label>
+        <input type="text" name="marital_status" class="form-control"
+               value="{{ old('marital_status', $patient->marital_status ?? '') }}">
+    </div>
+    <div class="col-md-3 mb-3">
+        <label class="form-label">Occupation</label>
+        <input type="text" name="occupation" class="form-control"
+               value="{{ old('occupation', $patient->occupation ?? '') }}">
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-2 mb-3">
+        <label class="form-label">Blood Group</label>
+        <input type="text" name="blood_group" class="form-control"
+               value="{{ old('blood_group', $patient->blood_group ?? '') }}">
+    </div>
+    <div class="col-md-3 mb-3">
+        <label class="form-label">Allergies</label>
+        <input type="text" name="allergies" class="form-control"
+               value="{{ old('allergies', $patient->allergies ?? '') }}">
+    </div>
+    <div class="col-md-3 mb-3">
+        <label class="form-label">Disabilities</label>
+        <input type="text" name="disabilities" class="form-control"
+               value="{{ old('disabilities', $patient->disabilities ?? '') }}">
+    </div>
+    <div class="col-md-4 mb-3">
+        <label class="form-label">Special Diet</label>
+        <input type="text" name="special_diet" class="form-control"
+               value="{{ old('special_diet', $patient->special_diet ?? '') }}">
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <label class="form-label">Medical Aid Provider</label>
+        <input type="text" name="medical_aid_provider" class="form-control"
+               value="{{ old('medical_aid_provider', $patient->medical_aid_provider ?? '') }}">
+    </div>
+    <div class="col-md-4 mb-3">
+        <label class="form-label">Medical Aid Number</label>
+        <input type="text" name="medical_aid_number" class="form-control"
+               value="{{ old('medical_aid_number', $patient->medical_aid_number ?? '') }}">
+    </div>
+    <div class="col-md-4 mb-3">
+        <label class="form-label">Blood Group</label>
+        <input type="text" name="blood_group" class="form-control"
+               value="{{ old('blood_group', $patient->blood_group ?? '') }}">
+    </div>
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Special Medical Requirements</label>
+    <textarea name="special_medical_requirements" rows="2" class="form-control">{{ old('special_medical_requirements', $patient->special_medical_requirements ?? '') }}</textarea>
+</div>
+<div class="mb-3">
+    <label class="form-label">Current Medications</label>
+    <textarea name="current_medications" rows="2" class="form-control">{{ old('current_medications', $patient->current_medications ?? '') }}</textarea>
+</div>
+<div class="mb-3">
+    <label class="form-label">Past Medical History</label>
+    <textarea name="past_medical_history" rows="2" class="form-control">{{ old('past_medical_history', $patient->past_medical_history ?? '') }}</textarea>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <label class="form-label">Next of Kin Name</label>
+        <input type="text" name="next_of_kin_name" class="form-control"
+               value="{{ old('next_of_kin_name', $patient->next_of_kin_name ?? '') }}">
+    </div>
+    <div class="col-md-4 mb-3">
+        <label class="form-label">Relationship</label>
+        <input type="text" name="next_of_kin_relationship" class="form-control"
+               value="{{ old('next_of_kin_relationship', $patient->next_of_kin_relationship ?? '') }}">
+    </div>
+    <div class="col-md-4 mb-3">
+        <label class="form-label">Next of Kin Contact</label>
+        <input type="text" name="next_of_kin_contact_number" class="form-control"
+               value="{{ old('next_of_kin_contact_number', $patient->next_of_kin_contact_number ?? '') }}">
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Next of Kin Email</label>
+        <input type="email" name="next_of_kin_email" class="form-control"
+               value="{{ old('next_of_kin_email', $patient->next_of_kin_email ?? '') }}">
+    </div>
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Next of Kin Address</label>
+        <input type="text" name="next_of_kin_address" class="form-control"
+               value="{{ old('next_of_kin_address', $patient->next_of_kin_address ?? '') }}">
+    </div>
+</div>

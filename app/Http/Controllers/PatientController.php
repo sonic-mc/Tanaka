@@ -2,199 +2,242 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Patient;
-use App\Models\CareLevel;
-use App\Models\User;
+use App\Models\PatientDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
-use App\Traits\AuditLogger;
-use App\Models\AuditLog;
-
-
 
 class PatientController extends Controller
 {
-
-    use AuditLogger;
-    
+    // List patients with search and status filter
     public function index(Request $request)
     {
-        $user = Auth::user();
-        $careLevels = CareLevel::all();
+        $query = PatientDetail::query();
 
-        // Assigned patients
-        $assignedPatients = Patient::where('assigned_nurse_id', $user->id)
-        ->when($request->assigned_search, function ($query) use ($request) {
-            $query->where(function ($q) use ($request) {
-                $q->where('first_name', 'like', '%' . $request->assigned_search . '%')
-                  ->orWhere('last_name', 'like', '%' . $request->assigned_search . '%')
-                  ->orWhere('patient_code', 'like', '%' . $request->assigned_search . '%');
+        // Status filter: active (default), trashed, all
+        $status = $request->get('status', 'active');
+        if ($status === 'trashed') {
+            $query->onlyTrashed();
+        } elseif ($status === 'all') {
+            $query->withTrashed();
+        }
+
+        // Search across multiple fields
+        if ($search = $request->get('q')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('patient_code', 'like', "%{$search}%")
+                  ->orWhere('first_name', 'like', "%{$search}%")
+                  ->orWhere('middle_name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%")
+                  ->orWhere('national_id_number', 'like', "%{$search}%")
+                  ->orWhere('passport_number', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('contact_number', 'like', "%{$search}%");
             });
-        })
-        ->when($request->assigned_status, fn($q) => $q->where('status', $request->assigned_status))
-        ->when($request->assigned_gender, fn($q) => $q->where('gender', $request->assigned_gender))
-        ->when($request->assigned_care_level, fn($q) => $q->where('current_care_level_id', $request->assigned_care_level))
-        ->with('careLevel')
-        ->get();
-    
+        }
 
-        // All patients
-        $allPatients = Patient::query()
-            ->when($request->all_search, function ($query) use ($request) {
-                $query->where(function ($q) use ($request) {
-                    $q->where('first_name', 'like', '%' . $request->all_search . '%')
-                    ->orWhere('last_name', 'like', '%' . $request->all_search . '%')
-                    ->orWhere('patient_code', 'like', '%' . $request->all_search . '%');
-                });
-            })
-            ->when($request->all_status, fn($q) => $q->where('status', $request->all_status))
-            ->when($request->all_gender, fn($q) => $q->where('gender', $request->all_gender))
-            ->when($request->all_care_level, fn($q) => $q->where('current_care_level_id', $request->all_care_level))
-            ->with('careLevel')
-            ->get();
+        $patients = $query->latest()->paginate(20)->withQueryString();
 
-            
-        $nurseId = auth()->id();
-
-        $nurseAssignedPatients = Patient::with(['careLevel', 'assignedNurse'])
-        ->whereNotNull('assigned_nurse_id')
-        ->when($request->filled('nurse_search'), fn($q) =>
-            $q->where(function ($query) use ($request) {
-                $query->where('first_name', 'like', '%' . $request->nurse_search . '%')
-                      ->orWhere('last_name', 'like', '%' . $request->nurse_search . '%')
-                      ->orWhere('patient_code', 'like', '%' . $request->nurse_search . '%');
-            })
-        )
-        ->when($request->filled('nurse_status'), fn($q) => $q->where('status', $request->nurse_status))
-        ->when($request->filled('nurse_gender'), fn($q) => $q->where('gender', $request->nurse_gender))
-        ->when($request->filled('nurse_care_level'), fn($q) => $q->where('current_care_level_id', $request->nurse_care_level))
-        ->orderBy('last_name')
-        ->get();
-    
-
-        $unassignedPatients = Patient::whereNull('assigned_nurse_id')
-            ->with('careLevel')
-            ->get();
-
-         // Nurses list
-         $nurses = User::query()->role('nurse')->get();
-        
-
-
-      
-
-        return view('nurse.patients.index', compact('assignedPatients', 'allPatients', 'careLevels', 'nurseAssignedPatients', 'unassignedPatients', 'nurses'));
+        return view('patients.index', compact('patients', 'status', 'search'));
     }
 
+    // Show form to create new patient
     public function create()
     {
-        $careLevels = CareLevel::all();
-        $staff = User::whereIn('role', ['admin', 'psychiatrist', 'nurse'])->get();
-        return view('admin.patients.create', compact('careLevels', 'staff'));
+        $patient = new PatientDetail();
+        return view('patients.create', compact('patient'));
     }
 
+    // Store new patient
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'patient_code' => 'required|unique:patients',
-            'first_name' => 'required|string',
-            'last_name' => 'required|string',
-            'gender' => 'required|in:male,female,other',
-            'dob' => 'nullable|date',
-            'contact_number' => 'nullable|string',
-            'admission_date' => 'required|date',
-            'admission_reason' => 'nullable|string',
-            'admitted_by' => 'required|exists:users,id',
-            'room_number' => 'nullable|string',
-            'status' => 'required|in:active,discharged',
-            'current_care_level_id' => 'nullable|exists:care_levels,id',
+            // Identification
+            'patient_code' => ['required', 'string', 'max:255', 'unique:patient_details,patient_code'],
+            'first_name' => ['required', 'string', 'max:100'],
+            'middle_name' => ['nullable', 'string', 'max:100'],
+            'last_name' => ['required', 'string', 'max:100'],
+            'gender' => ['required', Rule::in(['male', 'female', 'other'])],
+            'dob' => ['nullable', 'date'],
+            'national_id_number' => ['nullable', 'string', 'max:255', 'unique:patient_details,national_id_number'],
+            'passport_number' => ['nullable', 'string', 'max:255', 'unique:patient_details,passport_number'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+
+            // Contact & Demographics
+            'email' => ['nullable', 'email'],
+            'contact_number' => ['nullable', 'string', 'max:20'],
+            'residential_address' => ['nullable', 'string', 'max:255'],
+            'race' => ['nullable', 'string', 'max:50'],
+            'religion' => ['nullable', 'string', 'max:50'],
+            'language' => ['nullable', 'string', 'max:50'],
+            'denomination' => ['nullable', 'string', 'max:50'],
+            'marital_status' => ['nullable', 'string', 'max:50'],
+            'occupation' => ['nullable', 'string', 'max:100'],
+
+            // Medical Info
+            'blood_group' => ['nullable', 'string', 'max:10'],
+            'allergies' => ['nullable', 'string', 'max:255'],
+            'disabilities' => ['nullable', 'string', 'max:255'],
+            'special_diet' => ['nullable', 'string', 'max:255'],
+            'medical_aid_provider' => ['nullable', 'string', 'max:100'],
+            'medical_aid_number' => ['nullable', 'string', 'max:50'],
+            'special_medical_requirements' => ['nullable', 'string'],
+            'current_medications' => ['nullable', 'string'],
+            'past_medical_history' => ['nullable', 'string'],
+
+            // Next of Kin
+            'next_of_kin_name' => ['nullable', 'string', 'max:100'],
+            'next_of_kin_relationship' => ['nullable', 'string', 'max:50'],
+            'next_of_kin_contact_number' => ['nullable', 'string', 'max:20'],
+            'next_of_kin_email' => ['nullable', 'email'],
+            'next_of_kin_address' => ['nullable', 'string', 'max:255'],
         ]);
 
-        Patient::create($validated);
+        // Handle photo upload
+        if ($request->hasFile('photo')) {
+            $validated['photo'] = $request->file('photo')->store('patients', 'public');
+        }
 
-        return redirect()->route('patients.index')->with('success', 'Patient admitted successfully.');
+        $validated['created_by'] = Auth::id();
+
+        PatientDetail::create($validated);
+
+        return redirect()->route('patients.index')->with('success', 'Patient registered successfully.');
     }
 
+    // Show single patient
     public function show($id)
     {
-        $patient = Patient::with(['careLevel', 'admittedBy', 'evaluations', 'progressReports'])->findOrFail($id);
-        $evaluations = $patient->evaluations()->with('evaluator')->latest()->get();
-        $progressReports = $patient->progressReports()->with('reporter')->latest()->get();
-        $billingStatement = $patient->billingStatement;
-        return view('nurse.patients.show', compact('patient', 'evaluations', 'progressReports', 'billingStatement'));
+        // Allow viewing even if soft-deleted
+        $patient = PatientDetail::withTrashed()->findOrFail($id);
+        return view('patients.show', compact('patient'));
     }
 
-    public function edit($id)
+    // Show form to edit patient
+    public function edit(PatientDetail $patient)
     {
-        $patient = Patient::findOrFail($id);
-        $careLevels = CareLevel::all();
-        $staff = User::whereIn('role', ['admin', 'psychiatrist', 'nurse'])->get();
-        // Nurses list
-        $nurses = User::query()->role('nurse')->get();
-
-        return view('admin.patients.edit', compact('patient', 'careLevels', 'staff', 'nurses'));
+        return view('patients.edit', compact('patient'));
     }
 
-    public function update(Request $request, $id)
+    // Update patient
+    public function update(Request $request, PatientDetail $patient)
     {
-        $patient = Patient::findOrFail($id);
-
         $validated = $request->validate([
-            'patient_code' => 'required|unique:patients,patient_code,' . $patient->id,
-            'first_name' => 'required|string',
-            'last_name' => 'required|string',
-            'gender' => 'required|in:male,female,other',
-            'dob' => 'nullable|date',
-            'contact_number' => 'nullable|string',
-            'admission_date' => 'required|date',
-            'admission_reason' => 'nullable|string',
-            'admitted_by' => 'required|exists:users,id',
-            'room_number' => 'nullable|string',
-            'status' => 'required|in:active,discharged',
-            'current_care_level_id' => 'nullable|exists:care_levels,id',
+            'patient_code' => ['required', 'string', 'max:255', Rule::unique('patient_details', 'patient_code')->ignore($patient->id)],
+            'first_name' => ['required', 'string', 'max:100'],
+            'middle_name' => ['nullable', 'string', 'max:100'],
+            'last_name' => ['required', 'string', 'max:100'],
+            'gender' => ['required', Rule::in(['male', 'female', 'other'])],
+            'dob' => ['nullable', 'date'],
+            'national_id_number' => ['nullable', 'string', 'max:255', Rule::unique('patient_details', 'national_id_number')->ignore($patient->id)],
+            'passport_number' => ['nullable', 'string', 'max:255', Rule::unique('patient_details', 'passport_number')->ignore($patient->id)],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+
+            // Contact & Demographics
+            'email' => ['nullable', 'email'],
+            'contact_number' => ['nullable', 'string', 'max:20'],
+            'residential_address' => ['nullable', 'string', 'max:255'],
+            'race' => ['nullable', 'string', 'max:50'],
+            'religion' => ['nullable', 'string', 'max:50'],
+            'language' => ['nullable', 'string', 'max:50'],
+            'denomination' => ['nullable', 'string', 'max:50'],
+            'marital_status' => ['nullable', 'string', 'max:50'],
+            'occupation' => ['nullable', 'string', 'max:100'],
+
+            // Medical Info
+            'blood_group' => ['nullable', 'string', 'max:10'],
+            'allergies' => ['nullable', 'string', 'max:255'],
+            'disabilities' => ['nullable', 'string', 'max:255'],
+            'special_diet' => ['nullable', 'string', 'max:255'],
+            'medical_aid_provider' => ['nullable', 'string', 'max:100'],
+            'medical_aid_number' => ['nullable', 'string', 'max:50'],
+            'special_medical_requirements' => ['nullable', 'string'],
+            'current_medications' => ['nullable', 'string'],
+            'past_medical_history' => ['nullable', 'string'],
+
+            // Next of Kin
+            'next_of_kin_name' => ['nullable', 'string', 'max:100'],
+            'next_of_kin_relationship' => ['nullable', 'string', 'max:50'],
+            'next_of_kin_contact_number' => ['nullable', 'string', 'max:20'],
+            'next_of_kin_email' => ['nullable', 'email'],
+            'next_of_kin_address' => ['nullable', 'string', 'max:255'],
         ]);
+
+        // Handle photo upload and cleanup old file
+        if ($request->hasFile('photo')) {
+            if ($patient->photo && Storage::disk('public')->exists($patient->photo)) {
+                Storage::disk('public')->delete($patient->photo);
+            }
+            $validated['photo'] = $request->file('photo')->store('patients', 'public');
+        }
+
+        $validated['last_modified_by'] = Auth::id();
 
         $patient->update($validated);
 
         return redirect()->route('patients.index')->with('success', 'Patient updated successfully.');
     }
 
-    public function destroy($id)
+    // Soft delete patient
+    public function destroy(PatientDetail $patient)
     {
-        $patient = Patient::findOrFail($id);
         $patient->delete();
-
-        return redirect()->route('patients.index')->with('success', 'Patient record deleted.');
+        return redirect()->route('patients.index')->with('success', 'Patient archived.');
     }
 
-    public function assignNurse(Request $request, Patient $patient)
+    // Restore soft-deleted patient
+    public function restore($id)
     {
-        $request->validate([
-            'nurse_id' => 'nullable|exists:users,id',
-        ]);
+        $patient = PatientDetail::onlyTrashed()->findOrFail($id);
+        $patient->restore();
 
-        $patient->assigned_nurse_id = $request->nurse_id;
-        $patient->save();
-
-        AuditLog::log(
-            'Assigned nurse to patient',
-            "Patient {$patient->patient_code} assigned to nurse ID {$request->nurse_id}",
-            'patients',
-            'info'
-        );
-
-        return back()->with('success', 'Nurse assignment updated.');
+        return redirect()->route('patients.index', ['status' => 'trashed'])->with('success', 'Patient restored.');
     }
 
-
-    public function discharge(Patient $patient)
+    // Permanently delete patient (and photo)
+    public function forceDelete($id)
     {
-        $patient->status = 'discharged';
-        $patient->save();
+        $patient = PatientDetail::onlyTrashed()->findOrFail($id);
 
-        return redirect()->route('patients.show', $patient)->with('success', 'Patient discharged successfully.');
+        if ($patient->photo && Storage::disk('public')->exists($patient->photo)) {
+            Storage::disk('public')->delete($patient->photo);
+        }
+
+        $patient->forceDelete();
+
+        return redirect()->route('patients.index', ['status' => 'trashed'])->with('success', 'Patient permanently deleted.');
     }
 
+     // Lightweight JSON lookup for patient search (code, name, ID, passport)
+     public function lookup(Request $request)
+     {
+         $q = (string) $request->get('q', '');
+         $patients = PatientDetail::query()
+             ->select('id', 'patient_code', 'first_name', 'middle_name', 'last_name', 'gender', 'dob', 'contact_number')
+             ->when($q, function ($query) use ($q) {
+                 $query->where('patient_code', 'like', "%{$q}%")
+                     ->orWhere('first_name', 'like', "%{$q}%")
+                     ->orWhere('middle_name', 'like', "%{$q}%")
+                     ->orWhere('last_name', 'like', "%{$q}%")
+                     ->orWhere('national_id_number', 'like', "%{$q}%")
+                     ->orWhere('passport_number', 'like', "%{$q}%");
+             })
+             ->orderByDesc('id')
+             ->limit(20)
+             ->get()
+             ->map(function ($p) {
+                 return [
+                     'id' => $p->id,
+                     'label' => trim($p->first_name . ' ' . ($p->middle_name ? $p->middle_name . ' ' : '') . $p->last_name) . " ({$p->patient_code})",
+                     'code' => $p->patient_code,
+                     'name' => trim($p->first_name . ' ' . ($p->middle_name ? $p->middle_name . ' ' : '') . $p->last_name),
+                     'gender' => $p->gender,
+                     'dob' => optional($p->dob)->format('Y-m-d'),
+                     'contact' => $p->contact_number,
+                 ];
+             });
+ 
+         return response()->json(['data' => $patients]);
+     }
 }

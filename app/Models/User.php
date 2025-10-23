@@ -39,10 +39,7 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\IncidentReport::class, 'reported_by');
     }
 
-    public function assignedPatients()
-    {
-        return $this->hasMany(\App\Models\Patient::class, 'assigned_nurse_id');
-    }
+   
 
     /**
      * The attributes that should be hidden for serialization.
@@ -88,4 +85,12 @@ class User extends Authenticatable
       {
           return $query->whereIn('role', ['psychiatrist', 'nurse']);
       }
+
+      public function assignedPatients()
+        {
+            return $this->belongsToMany(Admission::class, 'nurse_patient_assignments', 'nurse_id', 'admission_id')
+                        ->withPivot('shift', 'assigned_date', 'notes')
+                        ->withTimestamps();
+        }
+
 }

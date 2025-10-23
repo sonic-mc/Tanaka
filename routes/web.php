@@ -20,9 +20,12 @@ use App\Http\Controllers\TherapySessionController;
 use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReportController;
-use App\Http\Controllers\AdmissionController;
+use App\Http\Controllers\AdmissionsController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\DashboardNotificationController;
+
+use App\Http\Controllers\PatientEvaluationController;
+use App\Http\Controllers\NurseAssignmentController;
 
 
 
@@ -57,7 +60,6 @@ Route::middleware(['auth'])->group(function () {
 
 // Nurse & Psychiatrist routes using Spatie's role middleware
 Route::middleware(['auth', 'role:psychiatrist|nurse'])->group(function () {
-    Route::resource('patients', PatientController::class);
     Route::resource('progress-reports', ProgressReportController::class);
     Route::resource('therapy-sessions', TherapySessionController::class);
     Route::resource('incidents', IncidentReportController::class);
@@ -138,21 +140,34 @@ Route::middleware(['auth', 'role:psychiatrist|nurse'])->group(function () {
 
 
 
-Route::middleware(['auth'])->group(function () {
-    Route::get('/admissions/create', [AdmissionController::class, 'create'])->name('admissions.create');
-    Route::post('/admissions', [AdmissionController::class, 'store'])->name('admissions.store');
-});
-
-
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/users', [UsersController::class, 'index'])->name('users.index');
     Route::post('/users/{id}/assign-role', [UsersController::class, 'assignRole'])->name('users.assignRole');
 });
 
-Route::middleware(['web', 'auth'])->group(function () {
-    Route::resource('evaluations', EvaluationController::class)
-        ->only(['index','store','show','edit','update','destroy']);
-});
+
+Route::resource('evaluations', PatientEvaluationController::class);
+Route::post('evaluations/{id}/restore', [PatientEvaluationController::class, 'restore'])->name('evaluations.restore');
+Route::delete('evaluations/{id}/force-delete', [PatientEvaluationController::class, 'forceDelete'])->name('evaluations.force-delete');
+
+// Patient lookup endpoint (AJAX for evaluation form)
+Route::get('patients/lookup', [PatientController::class, 'lookup'])->name('patients.lookup');
+
+Route::resource('admissions', AdmissionsController::class);
+Route::patch('admissions/{admission}/discharge', [AdmissionsController::class, 'discharge'])->name('admissions.discharge');
+
+Route::resource('patients', PatientController::class);
+// Additional routes for soft deletes
+Route::post('patients/{id}/restore', [PatientController::class, 'restore'])->name('patients.restore');
+Route::delete('patients/{id}/force-delete', [PatientController::class, 'forceDelete'])->name('patients.force-delete');
+
+
+
+
+Route::get('nurse-assignments', [NurseAssignmentController::class, 'index'])->name('nurse-assignments.index');
+Route::get('nurse-assignments/create', [NurseAssignmentController::class, 'create'])->name('nurse-assignments.create');
+Route::post('nurse-assignments', [NurseAssignmentController::class, 'store'])->name('nurse-assignments.store');
+Route::delete('nurse-assignments/{id}', [NurseAssignmentController::class, 'destroy'])->name('nurse-assignments.destroy');
 
 
 // Include billing routes
