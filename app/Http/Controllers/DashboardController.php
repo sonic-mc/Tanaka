@@ -207,7 +207,7 @@ class DashboardController extends Controller
         $progressReportCount = ProgressReport::count();
         $dischargeCount = Discharge::count();
         $billingCount = BillingStatement::count();
-        $paymentCount = Payment::count();
+       
 
         $notificationCount = $user->unreadNotifications()->count();
         $notifications = $notificationService->getForUser($user, 10);
@@ -224,7 +224,7 @@ class DashboardController extends Controller
             'progressReportCount',
             'dischargeCount',
             'billingCount',
-            'paymentCount',
+           
             'incidentsCount',
             'evaluationCount',
             'admissionsCount',

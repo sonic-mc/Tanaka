@@ -7,12 +7,21 @@ use App\Http\Requests\UpdatePatientEvaluationRequest;
 use App\Models\Admission;
 use App\Models\PatientDetail;
 use App\Models\PatientEvaluation;
+use App\Services\EmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PatientEvaluationController extends Controller
 {
+    protected EmailService $emailService;
+
+    public function __construct(EmailService $emailService)
+    {
+        $this->emailService = $emailService;
+    }
+
     // List evaluations with filters, search, soft-delete status
     public function index(Request $request)
     {
@@ -64,7 +73,10 @@ class PatientEvaluationController extends Controller
     {
         $userId = Auth::id();
 
-        DB::transaction(function () use ($request, $userId) {
+        $createdEvaluation = null;
+        $createdAdmission = null;
+
+        DB::transaction(function () use ($request, $userId, &$createdEvaluation, &$createdAdmission) {
             $evaluation = PatientEvaluation::create([
                 'patient_id' => $request->patient_id,
                 'psychiatrist_id' => $userId,
@@ -81,6 +93,8 @@ class PatientEvaluationController extends Controller
                 'created_by' => $userId,
             ]);
 
+            $createdEvaluation = $evaluation;
+
             // Admission logic: create only if required and no active admission exists
             if ($evaluation->requires_admission) {
                 $hasActiveAdmission = Admission::where('patient_id', $evaluation->patient_id)
@@ -88,7 +102,7 @@ class PatientEvaluationController extends Controller
                     ->exists();
 
                 if (!$hasActiveAdmission) {
-                    Admission::create([
+                    $createdAdmission = Admission::create([
                         'patient_id' => $evaluation->patient_id,
                         'evaluation_id' => $evaluation->id,
                         'admission_date' => now(),
@@ -101,6 +115,92 @@ class PatientEvaluationController extends Controller
                 }
             }
         });
+
+        // After transaction commit, send notification email(s) if next-of-kin email exists
+        try {
+            $patient = PatientDetail::find($createdEvaluation->patient_id);
+
+            $nokEmail = $patient->next_of_kin_email;
+            $nokName = $patient->next_of_kin_name ?? ($patient->first_name . ' ' . $patient->last_name);
+
+            if ($nokEmail) {
+                $subject = "Evaluation outcome for {$patient->first_name} {$patient->last_name}";
+                $bodyLines = [];
+                $bodyLines[] = "Dear {$nokName},";
+                $bodyLines[] = "";
+                $bodyLines[] = "This is to inform you of the recent clinical evaluation for {$patient->first_name} {$patient->last_name} (Patient Code: {$patient->patient_code}). Below are the key details:";
+                $bodyLines[] = "";
+                $bodyLines[] = "Evaluation date: " . optional($createdEvaluation->evaluation_date)->format('Y-m-d');
+                $bodyLines[] = "Evaluation type: " . ucfirst($createdEvaluation->evaluation_type);
+                $bodyLines[] = "Decision: " . ucfirst($createdEvaluation->decision);
+                if ($createdEvaluation->presenting_complaints) {
+                    $bodyLines[] = "";
+                    $bodyLines[] = "Presenting complaints:";
+                    $bodyLines[] = $createdEvaluation->presenting_complaints;
+                }
+                if ($createdEvaluation->diagnosis) {
+                    $bodyLines[] = "";
+                    $bodyLines[] = "Diagnosis:";
+                    $bodyLines[] = $createdEvaluation->diagnosis;
+                }
+                if ($createdEvaluation->recommendations) {
+                    $bodyLines[] = "";
+                    $bodyLines[] = "Recommendations:";
+                    $bodyLines[] = $createdEvaluation->recommendations;
+                }
+
+                // If admission was created, append admission details
+                if ($createdAdmission) {
+                    $bodyLines[] = "";
+                    $bodyLines[] = "Admission details:";
+                    $bodyLines[] = "Admission date: " . optional($createdAdmission->admission_date)->format('Y-m-d');
+                    $bodyLines[] = "Reason: " . ($createdAdmission->admission_reason ?? '—');
+                    $bodyLines[] = "Assigned psychiatrist ID: " . ($createdAdmission->assigned_psychiatrist_id ?? '—');
+                    $bodyLines[] = "Room: " . ($createdAdmission->room_number ?? 'To be assigned');
+                    $bodyLines[] = "";
+                    $bodyLines[] = "The patient has been admitted and the family/next-of-kin will be contacted by the ward staff with further details.";
+                } else {
+                    $bodyLines[] = "";
+                    $bodyLines[] = "No admission was required/created at this time.";
+                }
+
+                $bodyLines[] = "";
+                $bodyLines[] = "If you have questions, please contact the clinic.";
+                $body = implode("\n", $bodyLines);
+
+                // Use EmailService to send the email (no attachments)
+                $result = $this->emailService->sendEmailWithAttachment($nokEmail, $subject, $body, []);
+
+                if (!empty($result['success']) && $result['success']) {
+                    Log::info('Evaluation notification sent', [
+                        'patient_id' => $patient->id,
+                        'evaluation_id' => $createdEvaluation->id,
+                        'admission_id' => $createdAdmission->id ?? null,
+                        'recipient' => $nokEmail,
+                        'response' => $result['data'] ?? null,
+                    ]);
+                } else {
+                    Log::warning('Evaluation notification failed', [
+                        'patient_id' => $patient->id,
+                        'evaluation_id' => $createdEvaluation->id,
+                        'admission_id' => $createdAdmission->id ?? null,
+                        'recipient' => $nokEmail,
+                        'error' => $result['error'] ?? 'unknown',
+                    ]);
+                }
+            } else {
+                Log::info('No next-of-kin email configured for patient; skipping notification', [
+                    'patient_id' => $patient->id,
+                    'evaluation_id' => $createdEvaluation->id,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            // Log but do not interrupt normal flow
+            Log::error('Error sending evaluation notification', [
+                'exception' => $e->getMessage(),
+                'evaluation_id' => $createdEvaluation->id ?? null,
+            ]);
+        }
 
         return redirect()->route('evaluations.index')->with('success', 'Evaluation saved successfully.');
     }
@@ -127,7 +227,9 @@ class PatientEvaluationController extends Controller
     {
         $userId = Auth::id();
 
-        DB::transaction(function () use ($request, $evaluation, $userId) {
+        $createdAdmission = null;
+
+        DB::transaction(function () use ($request, $evaluation, $userId, &$createdAdmission) {
             $changedDecision = $evaluation->decision !== $request->decision;
 
             $evaluation->update([
@@ -151,7 +253,7 @@ class PatientEvaluationController extends Controller
                     ->exists();
 
                 if (!$hasActiveAdmission) {
-                    Admission::create([
+                    $createdAdmission = Admission::create([
                         'patient_id' => $evaluation->patient_id,
                         'evaluation_id' => $evaluation->id,
                         'admission_date' => now(),
@@ -164,6 +266,82 @@ class PatientEvaluationController extends Controller
                 }
             }
         });
+
+        // Send notification to next-of-kin with updated evaluation outcome and admission details (if created)
+        try {
+            $patient = PatientDetail::find($evaluation->patient_id);
+            $nokEmail = $patient->next_of_kin_email;
+            $nokName = $patient->next_of_kin_name ?? ($patient->first_name . ' ' . $patient->last_name);
+
+            if ($nokEmail) {
+                $subject = "Updated evaluation outcome for {$patient->first_name} {$patient->last_name}";
+                $bodyLines = [];
+                $bodyLines[] = "Dear {$nokName},";
+                $bodyLines[] = "";
+                $bodyLines[] = "The evaluation for {$patient->first_name} {$patient->last_name} has been updated. Key details:";
+                $bodyLines[] = "";
+                $bodyLines[] = "Evaluation date: " . optional($evaluation->evaluation_date)->format('Y-m-d');
+                $bodyLines[] = "Decision: " . ucfirst($evaluation->decision);
+                if ($evaluation->presenting_complaints) {
+                    $bodyLines[] = "";
+                    $bodyLines[] = "Presenting complaints:";
+                    $bodyLines[] = $evaluation->presenting_complaints;
+                }
+                if ($evaluation->diagnosis) {
+                    $bodyLines[] = "";
+                    $bodyLines[] = "Diagnosis:";
+                    $bodyLines[] = $evaluation->diagnosis;
+                }
+                if ($evaluation->recommendations) {
+                    $bodyLines[] = "";
+                    $bodyLines[] = "Recommendations:";
+                    $bodyLines[] = $evaluation->recommendations;
+                }
+
+                if ($createdAdmission) {
+                    $bodyLines[] = "";
+                    $bodyLines[] = "Admission details:";
+                    $bodyLines[] = "Admission date: " . optional($createdAdmission->admission_date)->format('Y-m-d');
+                    $bodyLines[] = "Reason: " . ($createdAdmission->admission_reason ?? '—');
+                    $bodyLines[] = "Assigned psychiatrist ID: " . ($createdAdmission->assigned_psychiatrist_id ?? '—');
+                    $bodyLines[] = "Room: " . ($createdAdmission->room_number ?? 'To be assigned');
+                }
+
+                $bodyLines[] = "";
+                $bodyLines[] = "If you have questions, please contact the clinic.";
+                $body = implode("\n", $bodyLines);
+
+                $result = $this->emailService->sendEmailWithAttachment($nokEmail, $subject, $body, []);
+
+                if (!empty($result['success']) && $result['success']) {
+                    Log::info('Evaluation update notification sent', [
+                        'patient_id' => $patient->id,
+                        'evaluation_id' => $evaluation->id,
+                        'admission_id' => $createdAdmission->id ?? null,
+                        'recipient' => $nokEmail,
+                        'response' => $result['data'] ?? null,
+                    ]);
+                } else {
+                    Log::warning('Evaluation update notification failed', [
+                        'patient_id' => $patient->id,
+                        'evaluation_id' => $evaluation->id,
+                        'admission_id' => $createdAdmission->id ?? null,
+                        'recipient' => $nokEmail,
+                        'error' => $result['error'] ?? 'unknown',
+                    ]);
+                }
+            } else {
+                Log::info('No next-of-kin email configured; skipping update notification', [
+                    'patient_id' => $patient->id,
+                    'evaluation_id' => $evaluation->id,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::error('Error sending evaluation update notification', [
+                'exception' => $e->getMessage(),
+                'evaluation_id' => $evaluation->id ?? null,
+            ]);
+        }
 
         return redirect()->route('evaluations.index')->with('success', 'Evaluation updated.');
     }
