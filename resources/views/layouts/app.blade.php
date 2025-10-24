@@ -165,6 +165,12 @@
                 <i class="bi bi-person-lines-fill me-2"></i> Patients
             </a>
         </li>
+        <li class="nav-item">
+            <a href="{{ route('invoices.index') }}"
+               class="nav-link {{ request()->routeIs(['invoices.*', 'billing.*', 'payments.*']) ? 'active' : '' }}">
+                <i class="bi bi-credit-card-2-front-fill me-2"></i> Billing & Payments
+            </a>
+        </li>
     @endif
     
 
@@ -219,12 +225,7 @@
                 <i class="bi bi-cloud-arrow-down-fill me-2"></i> Data Backup & Restore
             </a>
         </li>
-        <li class="nav-item">
-            <a href="{{ route('invoices.index') }}"
-               class="nav-link {{ request()->routeIs(['invoices.*', 'billing.*', 'payments.*']) ? 'active' : '' }}">
-                <i class="bi bi-credit-card-2-front-fill me-2"></i> Billing & Payments
-            </a>
-        </li>
+       
         <li class="nav-item">
             <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.index*') ? 'active' : '' }}">
                 <i class="bi bi-people me-2"></i> User Role Assignemt

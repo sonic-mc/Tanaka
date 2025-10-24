@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Payment extends Model
+class InvoicePayment extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
+
+    protected $table = 'invoice_payments';
 
     protected $fillable = [
         'invoice_id',
@@ -26,16 +29,16 @@ class Payment extends Model
 
     public function invoice()
     {
-        return $this->belongsTo(Invoice::class);
+        return $this->belongsTo(Invoice::class, 'invoice_id');
     }
 
     public function patient()
     {
-        return $this->belongsTo(Patient::class);
+        return $this->belongsTo(\App\Models\PatientDetail::class, 'patient_id');
     }
 
     public function receiver()
     {
-        return $this->belongsTo(User::class, 'received_by');
+        return $this->belongsTo(\App\Models\User::class, 'received_by');
     }
 }

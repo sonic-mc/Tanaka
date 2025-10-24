@@ -122,13 +122,6 @@ Route::post('/dashboard/notifications/read-all', [DashboardNotificationControlle
  ->name('dashboard.notifications.markAll');
 
 
-
-Route::middleware(['auth', 'role:admin|finance'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('billing', [BillingStatementController::class, 'index'])->name('billing.index');
-    Route::get('billing/{invoice}', [BillingStatementController::class, 'show'])->name('billing.show');
-    Route::post('billing/{invoice}/pay', [PaymentController::class, 'store'])->name('billing.pay');
-});
-
 Route::post('patients/{patient}/assign-nurse', [PatientController::class, 'assignNurse'])->name('patients.assign-nurse');
 
 Route::get('patients/{patient}/admit', [PatientController::class, 'admit'])->name('patients.admit');
@@ -169,6 +162,10 @@ Route::get('nurse-assignments', [NurseAssignmentController::class, 'index'])->na
 Route::get('nurse-assignments/create', [NurseAssignmentController::class, 'create'])->name('nurse-assignments.create');
 Route::post('nurse-assignments', [NurseAssignmentController::class, 'store'])->name('nurse-assignments.store');
 Route::delete('nurse-assignments/{id}', [NurseAssignmentController::class, 'destroy'])->name('nurse-assignments.destroy');
+
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::resource('billings', BillingController::class);
+});
 
 
 

@@ -9,6 +9,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     // Billing (create invoice)
     Route::get('/billing/create', [BillingController::class, 'create'])->name('billing.create');
     Route::post('/billing', [BillingController::class, 'store'])->name('billing.store');
+    
 
     // Invoices
     Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');

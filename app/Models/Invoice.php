@@ -43,6 +43,32 @@ class Invoice extends Model
 
     public function payments()
     {
-        return $this->hasMany(\App\Models\Payment::class, 'invoice_id');
+        return $this->hasMany(\App\Models\InvoicePayment::class, 'invoice_id');
     }
+
+    public function applyPaymentAmount(float $amount): float
+    {
+        // Ensure numeric precision consistent with casting
+        $currentBalance = (float) $this->balance_due;
+
+        $newBalance = round(max(0, $currentBalance - $amount), 2);
+
+        // Update status based on new balance
+        if ($newBalance <= 0) {
+            $this->status = 'paid';
+            $this->balance_due = 0.00;
+        } elseif ($newBalance < (float)$this->amount) {
+            $this->status = 'partially_paid';
+            $this->balance_due = $newBalance;
+        } else {
+            // If no reduction happened, keep unpaid
+            $this->status = 'unpaid';
+            $this->balance_due = $newBalance;
+        }
+
+        $this->save();
+
+        return (float) $this->balance_due;
+    }
+
 }
