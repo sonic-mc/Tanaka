@@ -1,40 +1,68 @@
 @extends('layouts.app')
+
+@section('title', 'Admissions')
+
 @section('content')
-<h3>Admissions</h3>
-<a href="{{ route('admissions.create') }}" class="btn btn-primary mb-3">New Admission</a>
-<table class="table">
-    <thead>
-        <tr>
-            <th>Patient</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th>Room</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach($admissions as $admission)
-        <tr>
-            <td>{{ $admission->patient->first_name }} {{ $admission->patient->last_name }}</td>
-            <td>{{ $admission->admission_date }}</td>
-            <td>{{ ucfirst($admission->status) }}</td>
-            <td>{{ $admission->room_number }}</td>
-            <td>
-                <a href="{{ route('admissions.show', $admission) }}" class="btn btn-sm btn-info">View</a>
-                <a href="{{ route('admissions.edit', $admission) }}" class="btn btn-sm btn-warning">Edit</a>
-                <form action="{{ route('admissions.destroy', $admission) }}" method="POST" style="display:inline;">
-                    @csrf @method('DELETE')
-                    <button class="btn btn-sm btn-danger" onclick="return confirm('Delete this admission?')">Delete</button>
-                </form>
-                @if($admission->status === 'active')
-                <form action="{{ route('admissions.discharge', $admission) }}" method="POST" style="display:inline;">
-                    @csrf @method('PATCH')
-                    <button class="btn btn-sm btn-secondary">Discharge</button>
-                </form>
-                @endif
-            </td>
-        </tr>
-        @endforeach
-    </tbody>
-</table>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">Admissions</h3>
+        <a href="{{ route('admissions.create') }}" class="btn btn-primary">New Admission</a>
+    </div>
+
+    @if(session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Patient</th>
+                            <th>Patient Code</th>
+                            <th>Admission Date</th>
+                            <th>Room</th>
+                            <th>Care Level</th>
+                            <th>Status</th>
+                            <th>Admitted By</th>
+                            <th style="width:180px">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($admissions as $ad)
+                            <tr>
+                                <td>{{ $ad->patient->first_name ?? '' }} {{ $ad->patient->last_name ?? '' }}</td>
+                                <td>{{ $ad->patient->patient_code ?? '' }}</td>
+                                <td>{{ optional($ad->admission_date)->format('Y-m-d') }}</td>
+                                <td>{{ $ad->room_number ?? '—' }}</td>
+                                <td>{{ $ad->care_level_id ?? '—' }}</td>
+                                <td>
+                                    <span class="badge bg-{{ $ad->status === 'active' ? 'success' : ($ad->status === 'discharged' ? 'secondary' : 'warning') }}">
+                                        {{ ucfirst($ad->status) }}
+                                    </span>
+                                </td>
+                                <td>{{ optional($ad->admittedBy)->name ?? '—' }}</td>
+                                <td>
+                                    <a href="{{ route('admissions.show', $ad) }}" class="btn btn-sm btn-outline-info">View</a>
+                                    <a href="{{ route('admissions.edit', $ad) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                    <form action="{{ route('admissions.destroy', $ad) }}" method="POST" class="d-inline ms-1" onsubmit="return confirm('Delete this admission?')">
+                                        @csrf @method('DELETE')
+                                        <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="8" class="text-center py-3">No admissions found.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        {{ $admissions->links() }}
+    </div>
+</div>
 @endsection
