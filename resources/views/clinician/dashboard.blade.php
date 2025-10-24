@@ -148,13 +148,14 @@
                     <a href="{{ route('patients.create') }}" class="btn btn-primary">
                         <i class="bi bi-person-plus me-1"></i> Register Patient
                     </a>
-                    <a href="{{ route('admissions.create') }}" class="btn btn-outline-primary">
-                        <i class="bi bi-clipboard-plus me-1"></i> New Admission
+                    <a href="{{ route('consultation_fees.index') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-cash-coin me-1"></i> Consultation Fees Management
                     </a>
                     <a href="{{ route('evaluations.create') }}" class="btn btn-outline-secondary">
                         <i class="bi bi-journal-check me-1"></i> Schedule Evaluation
                     </a>
                 </div>
+                
                 <hr>
                 <form action="{{ route('patients.index') }}" method="GET" class="input-group">
                     <input type="text" name="q" class="form-control" placeholder="Find a patient by code, name, ID...">

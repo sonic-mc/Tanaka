@@ -213,6 +213,8 @@ class DashboardController extends Controller
         $notifications = $notificationService->getForUser($user, 10);
 
         $incidentsCount = IncidentReport::count();
+        $evaluationCount = PatientEvaluation::count();
+        $admissionsCount = Admission::count();
 
         $progressDistribution = app(\App\Services\ProgressAnalyticsService::class)->distributionForUser($user, 30);
 
@@ -224,6 +226,8 @@ class DashboardController extends Controller
             'billingCount',
             'paymentCount',
             'incidentsCount',
+            'evaluationCount',
+            'admissionsCount',
             'notificationCount',
             'notifications',
             'progressDistribution'

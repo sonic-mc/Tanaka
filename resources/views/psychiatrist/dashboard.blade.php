@@ -128,7 +128,7 @@
 
     <div class="col-lg-3 col-md-6 mb-4">
         <div class="card modern-card stats-card h-100 p-4">
-            <div class="stats-number">{{ $patientCount }}</div>
+            <div class="stats-number">{{ $admissionsCount }}</div>
             <div class="stats-label">Active Patients</div>
         </div>
     </div>
@@ -140,7 +140,7 @@
     </div>
     <div class="col-lg-3 col-md-6 mb-4">
         <div class="card modern-card stats-card h-100 p-4">
-            {{-- <div class="stats-number">{{ $evaluationCount }}</div> --}}
+            <div class="stats-number">{{ $evaluationCount }}</div>
             <div class="stats-label">Evaluations</div>
         </div>
     </div>

@@ -26,6 +26,7 @@ use App\Http\Controllers\DashboardNotificationController;
 
 use App\Http\Controllers\PatientEvaluationController;
 use App\Http\Controllers\NurseAssignmentController;
+use App\Http\Controllers\ConsultationFeeController;
 
 
 
@@ -168,6 +169,10 @@ Route::get('nurse-assignments', [NurseAssignmentController::class, 'index'])->na
 Route::get('nurse-assignments/create', [NurseAssignmentController::class, 'create'])->name('nurse-assignments.create');
 Route::post('nurse-assignments', [NurseAssignmentController::class, 'store'])->name('nurse-assignments.store');
 Route::delete('nurse-assignments/{id}', [NurseAssignmentController::class, 'destroy'])->name('nurse-assignments.destroy');
+
+
+
+Route::resource('consultation_fees', ConsultationFeeController::class);
 
 
 // Include billing routes
