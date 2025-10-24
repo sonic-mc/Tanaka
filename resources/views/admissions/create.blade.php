@@ -63,11 +63,16 @@
                     @error('room_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
-                <div class="col-md-4">
-                    <label for="care_level_id" class="form-label">Care Level (ID)</label>
-                    <input type="number" id="care_level_id" name="care_level_id" value="{{ old('care_level_id') }}" class="form-control @error('care_level_id') is-invalid @enderror">
-                    @error('care_level_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <div class="form-group">
+                    <label>Care Level</label>
+                    <select name="care_level_id" class="form-control" required>
+                        <option value="">Select...</option>
+                        @foreach($careLevels as $id => $name)
+                            <option value="{{ $id }}" {{ old('care_level_id') == $id ? 'selected' : '' }}>{{ $name }}</option>
+                        @endforeach
+                    </select>
                 </div>
+                
 
                 <div class="col-12">
                     <label for="admission_reason" class="form-label">Reason for admission</label>

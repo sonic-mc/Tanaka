@@ -217,6 +217,11 @@ class DashboardController extends Controller
         $admissionsCount = Admission::count();
 
         $progressDistribution = app(\App\Services\ProgressAnalyticsService::class)->distributionForUser($user, 30);
+            // Get IDs of evaluated patients
+        $evaluatedPatientIds = PatientEvaluation::pluck('patient_id')->unique();
+
+        // Count patients who haven't been evaluated
+        $unevaluatedCount = PatientDetail::whereNotIn('id', $evaluatedPatientIds)->count();
 
         return view('psychiatrist.dashboard', compact(
             'patientCount',
@@ -224,7 +229,7 @@ class DashboardController extends Controller
             'progressReportCount',
             'dischargeCount',
             'billingCount',
-           
+            'unevaluatedCount',
             'incidentsCount',
             'evaluationCount',
             'admissionsCount',

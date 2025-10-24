@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Models\CareLevel;
 
 class AdmissionsController extends Controller
 {
@@ -37,6 +38,10 @@ class AdmissionsController extends Controller
         // Fetch patients who do NOT have an active admission
         $activePatientIds = Admission::where('status', 'active')->pluck('patient_id')->toArray();
 
+         // Care levels for the care level select (id => name)
+         $careLevels = CareLevel::orderBy('name')->pluck('name', 'id')->toArray();
+
+
         $patients = PatientDetail::whereNotIn('id', $activePatientIds)
             ->orderBy('last_name')
             ->orderBy('first_name')
@@ -47,7 +52,7 @@ class AdmissionsController extends Controller
             ->orderByDesc('evaluation_date')
             ->get();
 
-        return view('admissions.create', compact('patients', 'evaluations'));
+        return view('admissions.create', compact('patients', 'evaluations', 'careLevels'));
     }
 
     // Store new admission
@@ -63,6 +68,9 @@ class AdmissionsController extends Controller
         ]);
 
         $patient = PatientDetail::findOrFail($validated['patient_id']);
+
+        
+
 
         // Prevent admitting a patient who already has an active admission
         $alreadyAdmitted = Admission::where('patient_id', $patient->id)
@@ -180,7 +188,8 @@ class AdmissionsController extends Controller
     public function show(Admission $admission)
     {
         $admission->load(['patient', 'evaluation']);
-        return view('admissions.show', compact('admission'));
+        $careLevels = CareLevel::orderBy('name')->pluck('name', 'id')->toArray();
+        return view('admissions.show', compact('admission', 'careLevels'));
     }
 
     // Show form to edit admission
@@ -198,7 +207,9 @@ class AdmissionsController extends Controller
 
         $evaluations = PatientEvaluation::where('requires_admission', true)->get();
 
-        return view('admissions.edit', compact('admission', 'patients', 'evaluations'));
+        $careLevels = CareLevel::orderBy('name')->pluck('name', 'id')->toArray();
+
+        return view('admissions.edit', compact('admission', 'patients', 'evaluations', 'careLevels'));
     }
 
     // Update admission
@@ -224,6 +235,9 @@ class AdmissionsController extends Controller
             'status' => $validated['status'],
             'last_modified_by' => Auth::id(),
         ]);
+
+         
+
 
         return redirect()->route('admissions.index')->with('success', 'Admission updated.');
     }

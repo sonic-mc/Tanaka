@@ -2,9 +2,22 @@
 
 @section('header')
     <div class="d-flex justify-content-between align-items-center mb-4">
+        
         <div>
             <h2 class="fw-bold text-dark mb-1">Psychiatrist Dashboard</h2>
             <p class="text-muted mb-0">Monitor patients, therapy sessions, and mental health operations</p>
+            @if($unevaluatedCount > 0)
+        <div class="alert alert-warning d-flex align-items-center">
+            <i class="bi bi-exclamation-circle me-2"></i>
+            <strong>{{ $unevaluatedCount }}</strong> new patient{{ $unevaluatedCount > 1 ? 's' : '' }} awaiting evaluation.
+            <a href="{{ route('patients.index') }}" class="btn btn-sm btn-outline-dark ms-3">View Patients</a>
+        </div>
+        @else
+            <div class="alert alert-success d-flex align-items-center">
+                <i class="bi bi-check-circle me-2"></i> No new patients awaiting evaluation.
+            </div>
+        @endif
+
         </div>
         <div class="d-flex gap-2">
             <span class="badge bg-light text-dark px-3 py-2 rounded-pill">

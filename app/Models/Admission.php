@@ -45,4 +45,9 @@ public function nurseAssignments()
     return $this->hasMany(NursePatientAssignment::class, 'admission_id');
 }
 
+public function careLevel()
+{
+    return $this->belongsTo(\App\Models\CareLevel::class, 'care_level_id');
+}
+
 }

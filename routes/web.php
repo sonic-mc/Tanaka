@@ -160,6 +160,7 @@ Route::delete('patients/{id}/force-delete', [PatientController::class, 'forceDel
 
 Route::get('nurse-assignments', [NurseAssignmentController::class, 'index'])->name('nurse-assignments.index');
 Route::get('nurse-assignments/create', [NurseAssignmentController::class, 'create'])->name('nurse-assignments.create');
+Route::get('nurse-assignments/edit{id}', [NurseAssignmentController::class, 'edit'])->name('nurse-assignments.edit');
 Route::post('nurse-assignments', [NurseAssignmentController::class, 'store'])->name('nurse-assignments.store');
 Route::delete('nurse-assignments/{id}', [NurseAssignmentController::class, 'destroy'])->name('nurse-assignments.destroy');
 
@@ -167,6 +168,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::resource('billings', BillingController::class);
 });
 
+
+
+Route::resource('care_levels', CareLevelController::class);
 
 
 Route::resource('consultation_fees', ConsultationFeeController::class);

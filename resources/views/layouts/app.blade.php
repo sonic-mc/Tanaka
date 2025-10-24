@@ -147,99 +147,112 @@
     </nav>
 
    <!-- Sidebar -->
-<nav class="fixed-sidebar p-3">
+   <nav class="fixed-sidebar p-3">
     <h4 class="text-white mb-4">
         <i class="bi bi-heart-pulse-fill me-2"></i>{{ config('app.name', 'Psych Monitor') }}
     </h4>
 
     <ul class="nav flex-column">
+        {{-- Universal --}}
         <li class="nav-item">
             <a href="{{ route('dashboard') }}" class="nav-link {{ isActive('dashboard') }}">
                 <i class="bi bi-speedometer2 me-2"></i> Dashboard
             </a>
         </li>
 
+        {{-- Clinician --}}
         @if(auth()->user()->hasRole('clinician'))
-        <li class="nav-item">
-            <a href="{{ route('patients.index') }}" class="nav-link {{ isActive('patients*') }}">
-                <i class="bi bi-person-lines-fill me-2"></i> Patients
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ route('invoices.index') }}"
-               class="nav-link {{ request()->routeIs(['invoices.*', 'billing.*', 'payments.*']) ? 'active' : '' }}">
-                <i class="bi bi-credit-card-2-front-fill me-2"></i> Billing & Payments
-            </a>
-        </li>
-    @endif
-    
-
-        @if(auth()->user()->hasAnyRole(['psychiatrist','nurse']))
-            <li class="nav-item"><a href="{{ route('patients.index') }}" class="nav-link {{ isActive('patients*') }}"><i class="bi bi-person-lines-fill me-2"></i> Patients</a></li>
-            <li class="nav-item"><a href="{{ route('progress-reports.index') }}" class="nav-link {{ isActive('progress-reports*') }}"><i class="bi bi-bar-chart-line-fill me-2"></i> Progress Monitoring</a></li>
-            <li class="nav-item"><a href="{{ route('therapy-sessions.index') }}" class="nav-link {{ isActive('therapy-sessions*') }}"><i class="bi bi-calendar-check me-2"></i> Therapy Sessions</a></li>
-            <li class="nav-item"><a href="{{ route('incidents.index') }}" class="nav-link {{ isActive('incidents*') }}"><i class="bi bi-exclamation-triangle me-2"></i> Incidents</a></li>
-            {{-- <li class="nav-item"><a href="{{ route('notifications.index') }}" class="nav-link {{ isActive('notifications*') }}"><i class="bi bi-bell me-2"></i> Notifications</a></li> --}}
+            <li class="nav-item mt-3 text-white fw-bold">Clinician</li>
+            <li class="nav-item">
+                <a href="{{ route('patients.index') }}" class="nav-link {{ isActive('patients*') }}">
+                    <i class="bi bi-person-lines-fill me-2"></i> Patients
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('invoices.index') }}"
+                   class="nav-link {{ request()->routeIs(['invoices.*', 'billing.*', 'payments.*']) ? 'active' : '' }}">
+                    <i class="bi bi-credit-card-2-front-fill me-2"></i> Billing & Payments
+                </a>
+            </li>
         @endif
 
-        @if(auth()->user()->hasRole('psychiatrist'))
-        <li class="nav-item">
-            <a href="{{ route('evaluations.index') }}" class="nav-link {{ request()->routeIs('evaluations.*') ? 'active' : '' }}">
-                <i class="bi bi-journal-medical me-2"></i> Patient Evaluations
-            </a>
-        </li>
-    
-        <li class="nav-item">
-            <a href="{{ route('admissions.index') }}" class="nav-link {{ request()->routeIs('admissions.*') ? 'active' : '' }}">
-                <i class="bi bi-hospital me-2"></i> Admissions Management
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ route('nurse-assignments.index') }}" class="nav-link {{ request()->routeIs('nurse-assignments.*') ? 'active' : '' }}">
-                <i class="bi bi-person-badge me-2"></i> Nurse Assignments
-            </a>
-        </li>
-    @endif
-    
-    @if(auth()->user()->hasAnyRole(['psychiatrist','nurse']))
-        <li class="nav-item">
-            <a href="{{ route('reports.index')}}" class="nav-link {{ request()->is('reports*') ? 'active' : '' }}">
-                <i class="bi bi-file-earmark-text-fill me-2"></i> Reports
-            </a>
-        </li>
-    @endif
-    
-    @if(auth()->user()->hasRole('admin'))
-        <li class="nav-item">
-            <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
-                <i class="bi bi-people-fill me-2"></i> User Management
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ route('admin.logs.index') }}" class="nav-link {{ request()->routeIs('admin.logs.*') ? 'active' : '' }}">
-                <i class="bi bi-journal-text me-2"></i> System Activity Logs
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ route('admin.backups.index') }}" class="nav-link {{ request()->routeIs('admin.backups.*') ? 'active' : '' }}">
-                <i class="bi bi-cloud-arrow-down-fill me-2"></i> Data Backup & Restore
-            </a>
-        </li>
-       
-        <li class="nav-item">
-            <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.index*') ? 'active' : '' }}">
-                <i class="bi bi-people me-2"></i> User Role Assignemt
-            </a>
-        </li>
-        
-    @endif
+        {{-- Psychiatrist & Nurse --}}
+        @if(auth()->user()->hasAnyRole(['psychiatrist','nurse']))
+            <li class="nav-item mt-3 text-white fw-bold">Clinical Staff</li>
+            <li class="nav-item">
+                <a href="{{ route('progress-reports.index') }}" class="nav-link {{ isActive('progress-reports*') }}">
+                    <i class="bi bi-bar-chart-line-fill me-2"></i> Progress Monitoring
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('therapy-sessions.index') }}" class="nav-link {{ isActive('therapy-sessions*') }}">
+                    <i class="bi bi-calendar-check me-2"></i> Therapy Sessions
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('incidents.index') }}" class="nav-link {{ isActive('incidents*') }}">
+                    <i class="bi bi-exclamation-triangle me-2"></i> Incidents
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('reports.index') }}" class="nav-link {{ request()->is('reports*') ? 'active' : '' }}">
+                    <i class="bi bi-file-earmark-text-fill me-2"></i> Reports
+                </a>
+            </li>
+        @endif
 
-   
-    
-    
-    
+        {{-- Psychiatrist Exclusive --}}
+        @if(auth()->user()->hasRole('psychiatrist'))
+            <li class="nav-item mt-3 text-white fw-bold">Psychiatrist</li>
+            <li class="nav-item">
+                <a href="{{ route('evaluations.index') }}" class="nav-link {{ request()->routeIs('evaluations.*') ? 'active' : '' }}">
+                    <i class="bi bi-journal-medical me-2"></i> Patient Evaluations
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admissions.index') }}" class="nav-link {{ request()->routeIs('admissions.*') ? 'active' : '' }}">
+                    <i class="bi bi-hospital me-2"></i> Admissions Management
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('nurse-assignments.index') }}" class="nav-link {{ request()->routeIs('nurse-assignments.*') ? 'active' : '' }}">
+                    <i class="bi bi-person-badge me-2"></i> Nurse Assignments
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('care_levels.index') }}" class="nav-link {{ request()->routeIs('care_levels.*') ? 'active' : '' }}">
+                    <i class="bi bi-layers me-2"></i> Manage Care Levels
+                </a>
+            </li>
+        @endif
+
+        {{-- Admin --}}
+        @if(auth()->user()->hasRole('admin'))
+            <li class="nav-item mt-3 text-white fw-bold">Administrator</li>
+            <li class="nav-item">
+                <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+                    <i class="bi bi-people-fill me-2"></i> User Management
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.logs.index') }}" class="nav-link {{ request()->routeIs('admin.logs.*') ? 'active' : '' }}">
+                    <i class="bi bi-journal-text me-2"></i> System Activity Logs
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.backups.index') }}" class="nav-link {{ request()->routeIs('admin.backups.*') ? 'active' : '' }}">
+                    <i class="bi bi-cloud-arrow-down-fill me-2"></i> Data Backup & Restore
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.index*') ? 'active' : '' }}">
+                    <i class="bi bi-people me-2"></i> User Role Assignment
+                </a>
+            </li>
+        @endif
     </ul>
 </nav>
+
 
 
     <!-- Main Content -->
