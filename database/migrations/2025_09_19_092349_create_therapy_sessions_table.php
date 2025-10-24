@@ -11,7 +11,7 @@ return new class extends Migration {
             $table->id();
 
             // Relationships
-            $table->foreignId('patient_id')->constrained()->onDelete('cascade');
+            $table->foreignId('patient_id')->constrained('patient_details')->onDelete('cascade');
             $table->foreignId('clinician_id')->constrained('users')->onDelete('cascade');
 
             // Session info

@@ -34,7 +34,7 @@ class TherapySession extends Model
 
     public function patient()
     {
-        return $this->belongsTo(\App\Models\Patient::class);
+        return $this->belongsTo(\App\Models\PatientDetail::class);
     }
 
     public function clinician()

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\IncidentReport;
-use App\Models\Patient;
+use App\Models\PatientDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
@@ -21,7 +21,7 @@ class IncidentReportController extends Controller
     public function index(Request $request)
     {
         // Patients for dropdown
-        $patients = Patient::orderBy('last_name')->get();
+        $patients = PatientDetail::orderBy('last_name')->get();
     
         // Base query for filtering
         $query = IncidentReport::with(['patient', 'reporter']);
@@ -78,7 +78,7 @@ class IncidentReportController extends Controller
     // Show form to create a new report
     public function create()
     {
-        $patients = Patient::orderBy('last_name')->get();
+        $patients = PatientDetail::orderBy('last_name')->get();
         return view('incident.create', compact('patients'));
     }
 
@@ -111,7 +111,7 @@ class IncidentReportController extends Controller
     // Optional: filter reports by patient
     public function byPatient($patientId)
     {
-        $patient = Patient::findOrFail($patientId);
+        $patient = PatientDetail::findOrFail($patientId);
         $reports = IncidentReport::where('patient_id', $patientId)->with('reporter')->latest()->paginate(10);
         return view('incident-reports.by-patient', compact('patient', 'reports'));
     }

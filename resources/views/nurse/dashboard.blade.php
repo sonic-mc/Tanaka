@@ -145,10 +145,23 @@
                     <div class="col-md-3">
                         <div class="card text-center border-0 shadow-sm">
                             <div class="card-body">
+                                <div class="mb-2 rounded-circle d-inline-block p-3" style="background: linear-gradient(135deg, #6f42c1, #5a32a3);">
+                                    <i class="bi bi-chat-heart text-white"></i>
+                                </div>
+                                <h4 class="fw-bold mb-0">{{ $therapySessionsCount }}</h4>
+                                <small class="text-muted">Therapy Sessions</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+
+                    <div class="col-md-3">
+                        <div class="card text-center border-0 shadow-sm">
+                            <div class="card-body">
                                 <div class="mb-2 rounded-circle d-inline-block p-3" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
                                     <i class="bi bi-clipboard-check text-white"></i>
                                 </div>
-                                <h4 class="fw-bold mb-0">{{ $reportsCount }}</h4>
+                                <h4 class="fw-bold mb-0">{{ $progressreportCount }}</h4>
                                 <small class="text-muted">Reports Today</small>
                             </div>
                         </div>

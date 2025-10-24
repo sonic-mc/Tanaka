@@ -12,7 +12,7 @@ class IncidentReport extends Model
 
     public function patient()
     {
-        return $this->belongsTo(Patient::class);
+        return $this->belongsTo(PatientDetail::class);
     }
 
     public function reporter()

@@ -8,7 +8,7 @@ use App\Models\PatientDetail;
 use App\Models\Admission;
 use App\Models\PatientEvaluation;
 use App\Models\Appointment;
-use App\Models\ProgressReport;
+use App\Models\PatientProgressReport;
 use App\Models\IncidentReport;
 use App\Models\User;
 use App\Models\Task;
@@ -257,15 +257,13 @@ class DashboardController extends Controller
         $patientsCount = $assignedPatients;
         $admissionsCount = \App\Models\Admission::count();
 
-        $reportsCount = ProgressReport::whereDate('created_at', $today)
-            ->where('reported_by', $user->id)
-            ->count();
+        
 
         $incidentsCount = IncidentReport::where('reported_by', $user->id)->count();
+        $progressreportCount = PatientProgressReport::count();
+        $therapySessionsCount = TherapySession::count();
 
-        $pendingReports = ProgressReport::where('reported_by', $user->id)
-            ->whereDate('created_at', '<', now()->subDays(30))
-            ->count();
+        
 
         // Last 5 assigned admissions with patient details
         $assignedAdmissions = Admission::where('status', 'active')
@@ -280,9 +278,9 @@ class DashboardController extends Controller
 
         return view('nurse.dashboard', compact(
             'assignedPatients',
-            'pendingReports',
             'patientsCount',
-            'reportsCount',
+            'progressreportCount',
+            'therapySessionsCount',
             'incidentsCount',
             'assignedAdmissions',
             'calendarEvents',

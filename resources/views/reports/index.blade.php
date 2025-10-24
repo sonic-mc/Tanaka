@@ -8,21 +8,25 @@
 
     {{-- Filter form --}}
     <form method="GET" action="{{ route('reports.index') }}" class="mb-4">
+        @php
+            $selectedModules = request('modules', []);
+            $allModules = $allowedModules ?? [
+                'patients','admissions','discharges','evaluations','incident_reports',
+                'progress_reports','billing_statements','therapy_sessions','invoices','payments'
+            ];
+        @endphp
+
         <div class="row mb-3">
             <div class="col-md-8">
                 <label class="form-label fw-bold">Select Modules:</label>
                 <div class="row g-2">
-                    @foreach([
-                        'patients','discharges','evaluations','incident_reports',
-                        'progress_reports','therapy_sessions',
-                        'invoices','payments'
-                    ] as $module)
-                        <div class="col-md-4">
+                    @foreach($allModules as $module)
+                        <div class="col-md-6 col-lg-4">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" 
-                                       name="modules[]" value="{{ $module }}" 
-                                       id="{{ $module }}" 
-                                       {{ in_array($module, request('modules', [])) ? 'checked' : '' }}>
+                                <input class="form-check-input" type="checkbox"
+                                       name="modules[]" value="{{ $module }}"
+                                       id="{{ $module }}"
+                                       {{ in_array($module, $selectedModules, true) ? 'checked' : '' }}>
                                 <label class="form-check-label" for="{{ $module }}">
                                     {{ ucwords(str_replace('_', ' ', $module)) }}
                                 </label>
@@ -36,9 +40,9 @@
                 <label class="form-label fw-bold">Filter by Patient (optional):</label>
                 <select name="patient_id" class="form-select">
                     <option value="">-- All Patients --</option>
-                    @foreach(\App\Models\Patient::select('id','first_name','last_name')->get() as $p)
-                        <option value="{{ $p->id }}" {{ request('patient_id') == $p->id ? 'selected' : '' }}>
-                            {{ $p->first_name }} {{ $p->last_name }}
+                    @foreach(\App\Models\PatientDetail::select('id','first_name','middle_name','last_name')->orderBy('last_name')->get() as $p)
+                        <option value="{{ $p->id }}" {{ (string)request('patient_id') === (string)$p->id ? 'selected' : '' }}>
+                            {{ trim($p->first_name.' '.($p->middle_name ? $p->middle_name.' ' : '').$p->last_name) }}
                         </option>
                     @endforeach
                 </select>
@@ -50,7 +54,7 @@
         </button>
     </form>
 
-    @if($modules)
+    @if(!empty($modules))
         {{-- Export --}}
         <form method="POST" action="{{ route('reports.export') }}" class="mb-4">
             @csrf
@@ -59,11 +63,10 @@
             @endforeach
             <input type="hidden" name="patient_id" value="{{ request('patient_id') }}">
 
-            @if(request('patient_id'))
+            @if(!empty($patient))
                 <p class="mb-2">
-                    Exporting reports for: 
-                    {{ \App\Models\Patient::find(request('patient_id'))->first_name ?? '' }} 
-                    {{ \App\Models\Patient::find(request('patient_id'))->last_name ?? '' }}
+                    Exporting reports for:
+                    <strong>{{ $patient->full_name }}</strong>
                 </p>
             @endif
 
@@ -79,7 +82,12 @@
                     {{ ucwords(str_replace('_', ' ', $key)) }}
                 </div>
                 <div class="card-body">
-                    @if($items instanceof \Illuminate\Support\Collection && $items->isNotEmpty())
+                    @php
+                        $renderCollection = $items instanceof \Illuminate\Support\Collection;
+                        $renderModel = $items instanceof \Illuminate\Database\Eloquent\Model;
+                    @endphp
+
+                    @if($renderCollection && $items->isNotEmpty())
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover align-middle">
                                 <thead class="table-light">
@@ -97,39 +105,60 @@
                                                     $val = $row->$col;
 
                                                     // Relationship substitutions
-                                                    if($col === 'patient_id' && isset($row->patient)) {
-                                                        $val = $row->patient->first_name . ' ' . $row->patient->last_name;
+                                                    if ($col === 'patient_id' && method_exists($row, 'patient') && $row->relationLoaded('patient') && $row->patient) {
+                                                        $val = $row->patient->full_name ?? trim(($row->patient->first_name ?? '').' '.($row->patient->last_name ?? ''));
                                                     }
-                                                    if($col === 'evaluated_by' && isset($row->evaluator)) {
-                                                        $val = $row->evaluator->name;
+                                                    if ($col === 'psychiatrist_id' && method_exists($row, 'psychiatrist') && $row->relationLoaded('psychiatrist') && $row->psychiatrist) {
+                                                        $val = $row->psychiatrist->name ?? $row->psychiatrist->email ?? $row->psychiatrist->id;
                                                     }
-                                                    if($col === 'admitted_by' && isset($row->admittedBy)) {
-                                                        $val = $row->admittedBy->name;
+                                                    if ($col === 'clinician_id' && method_exists($row, 'clinician') && $row->relationLoaded('clinician') && $row->clinician) {
+                                                        $val = $row->clinician->name ?? $row->clinician->email ?? $row->clinician->id;
                                                     }
-                                                    if($col === 'assigned_nurse_id' && isset($row->assignedNurse)) {
-                                                        $val = $row->assignedNurse->name;
+                                                    if ($col === 'discharged_by' && method_exists($row, 'dischargedBy') && $row->relationLoaded('dischargedBy') && $row->dischargedBy) {
+                                                        $val = $row->dischargedBy->name ?? $row->dischargedBy->email ?? $row->dischargedBy->id;
                                                     }
-                                                    if($col === 'current_care_level_id' && isset($row->careLevel)) {
-                                                        $val = $row->careLevel->name;
+                                                    if ($col === 'received_by' && method_exists($row, 'receiver') && $row->relationLoaded('receiver') && $row->receiver) {
+                                                        $val = $row->receiver->name ?? $row->receiver->email ?? $row->receiver->id;
                                                     }
-                                                    if($col === 'reported_by' && isset($row->reporter)) {
-                                                        $val = $row->reporter->name;
+                                                    if ($col === 'invoice_id' && method_exists($row, 'invoice') && $row->relationLoaded('invoice') && $row->invoice) {
+                                                        $val = $row->invoice->invoice_number ?? ('#'.$row->invoice->id);
+                                                    }
+                                                    if ($col === 'admission_id' && method_exists($row, 'admission') && $row->relationLoaded('admission') && $row->admission) {
+                                                        $val = 'Admission #'.$row->admission->id;
+                                                    }
+                                                    if ($col === 'evaluation_id' && method_exists($row, 'evaluation') && $row->relationLoaded('evaluation') && $row->evaluation) {
+                                                        $val = 'Evaluation #'.$row->evaluation->id;
+                                                    }
+                                                    if ($col === 'care_level_id' && method_exists($row, 'careLevel') && $row->relationLoaded('careLevel') && $row->careLevel) {
+                                                        $val = $row->careLevel->name ?? ('#'.$row->careLevel->id);
+                                                    }
+                                                    if ($col === 'created_by' && method_exists($row, 'creator') && $row->relationLoaded('creator') && $row->creator) {
+                                                        $val = $row->creator->name ?? $row->creator->email ?? $row->creator->id;
+                                                    }
+                                                    if ($col === 'last_modified_by' && method_exists($row, 'lastModifier') && $row->relationLoaded('lastModifier') && $row->lastModifier) {
+                                                        $val = $row->lastModifier->name ?? $row->lastModifier->email ?? $row->lastModifier->id;
                                                     }
 
-                                                    // Format timestamps
-                                                    if(str_contains($col, 'created_at') || str_contains($col, 'updated_at') || str_contains($col, 'date')) {
+                                                    // Format dates/times
+                                                    $colLower = strtolower($col);
+                                                    if (str_contains($colLower, 'created_at') || str_contains($colLower, 'updated_at') || str_contains($colLower, 'date') || str_contains($colLower, 'at')) {
                                                         try {
-                                                            $val = \Carbon\Carbon::parse($val)->format('d M Y H:i');
+                                                            $val = $val ? \Carbon\Carbon::parse($val)->format('d M Y H:i') : $val;
                                                         } catch (\Exception $e) {
-                                                            // leave as-is if not parsable
+                                                            // leave as-is
                                                         }
+                                                    }
+
+                                                    // Money formatting for common columns
+                                                    if (in_array($col, ['amount','balance_due','total_amount','outstanding_balance'], true) && $val !== null) {
+                                                        $val = number_format((float)$val, 2);
                                                     }
                                                 @endphp
                                                 <td>
                                                     @if(is_array($val) || is_object($val))
-                                                        <pre class="m-0 small">{{ json_encode($val) }}</pre>
+                                                        <pre class="m-0 small">{{ json_encode($val, JSON_PRETTY_PRINT) }}</pre>
                                                     @else
-                                                        {{ $val ?: '—' }}
+                                                        {{ $val !== null && $val !== '' ? $val : '—' }}
                                                     @endif
                                                 </td>
                                             @endforeach
@@ -138,8 +167,48 @@
                                 </tbody>
                             </table>
                         </div>
+                    @elseif($renderModel)
+                        @php
+                            $model = $items;
+                            $attributes = $model->getAttributes();
+                        @endphp
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover align-middle">
+                                <tbody>
+                                    @foreach($attributes as $col => $val)
+                                        @php
+                                            $display = $val;
+
+                                            if ($col === 'created_by' && method_exists($model, 'creator') && $model->relationLoaded('creator') && $model->creator) {
+                                                $display = $model->creator->name ?? $model->creator->email ?? $model->creator->id;
+                                            }
+                                            if ($col === 'last_modified_by' && method_exists($model, 'lastModifier') && $model->relationLoaded('lastModifier') && $model->lastModifier) {
+                                                $display = $model->lastModifier->name ?? $model->lastModifier->email ?? $model->lastModifier->id;
+                                            }
+
+                                            $colLower = strtolower($col);
+                                            if (str_contains($colLower, 'created_at') || str_contains($colLower, 'updated_at') || str_contains($colLower, 'date') || str_contains($colLower, 'at')) {
+                                                try {
+                                                    $display = $display ? \Carbon\Carbon::parse($display)->format('d M Y H:i') : $display;
+                                                } catch (\Exception $e) {}
+                                            }
+                                        @endphp
+                                        <tr>
+                                            <th style="width: 25%">{{ ucwords(str_replace('_',' ',$col)) }}</th>
+                                            <td>
+                                                @if(is_array($display) || is_object($display))
+                                                    <pre class="m-0 small">{{ json_encode($display, JSON_PRETTY_PRINT) }}</pre>
+                                                @else
+                                                    {{ $display !== null && $display !== '' ? $display : '—' }}
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     @else
-                        <p class="text-muted">No records found for {{ $key }}.</p>
+                        <p class="text-muted mb-0">No records found for {{ ucwords(str_replace('_', ' ', $key)) }}.</p>
                     @endif
                 </div>
             </div>
