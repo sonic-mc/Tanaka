@@ -169,6 +169,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
 });
 
 
+// Progress reports
+Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
+    // resourceful routes
+    Route::resource('progress-reports', \App\Http\Controllers\ProgressReportController::class)
+        ->parameters(['progress-reports' => 'id'])
+        ->except(['create']); // we expose create separately if desired
+
+    // specialized endpoints
+    Route::get('progress-reports/create', [\App\Http\Controllers\ProgressReportController::class, 'create'])->name('progress-reports.create');
+    Route::get('progress-reports/{patientId}/compare', [\App\Http\Controllers\ProgressReportController::class, 'compare'])->name('progress-reports.compare');
+    Route::get('progress-reports/{patientId}/export', [\App\Http\Controllers\ProgressReportController::class, 'exportCsv'])->name('progress-reports.export');
+});
 
 Route::resource('care_levels', CareLevelController::class);
 

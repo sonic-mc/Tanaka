@@ -188,7 +188,7 @@
     <header class="page-header">
         <h1>
             <i class="bi bi-hospital-fill icon"></i>
-            Psych Monitoring System
+            Chimhanda Psych Care
         </h1>
     </header>
 

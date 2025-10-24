@@ -17,13 +17,14 @@ use Spatie\Permission\Models\Permission;
 use App\Models\Prescription;
 use App\Models\Medication;
 use App\Models\Invoice;
-use App\Models\Payment;
+use App\Models\InvoicePayment;
 use App\Models\Notification;
 use App\Models\BillingStatement;
 use App\Models\Discharge;
 use App\Traits\AuditLogger;
 use Carbon\Carbon;
 use App\Models\AuditLog;
+use App\Models\TherapySession;
 
 class DashboardController extends Controller
 {
@@ -58,7 +59,7 @@ class DashboardController extends Controller
         }
     }
 
-    protected function adminDashboard()
+     public function adminDashboard()
     {
         // Patients now come from patient_details
         $patientCount = PatientDetail::count();
@@ -73,7 +74,7 @@ class DashboardController extends Controller
         $recentPatients = PatientDetail::latest()->take(5)->get();
 
         // "Active patients" -> patients with active admissions (distinct patients)
-        $activePatients = Admission::where('status', 'active')->distinct('patient_id')->count();
+        $activePatients = Admission::where('status', 'active')->distinct()->count('patient_id');
 
         // Staff
         $recentStaff = User::whereIn('role', ['nurse', 'psychiatrist', 'doctor'])
@@ -98,19 +99,16 @@ class DashboardController extends Controller
 
         // Billing & Payments
         $unpaidInvoices = Invoice::where('status', 'unpaid')->count();
-        $recentPayments = Payment::latest()->take(5)->get();
 
-        // Notifications
+        // Notifications (adapt to your notifications implementation)
         $unreadNotifications = Notification::whereNull('read_at')->count();
         $recentNotifications = Notification::latest()->take(5)->get();
 
-        $therapySessionCount = \App\Models\TherapySession::count();
+        $therapySessionCount = TherapySession::count();
         $progressReportCount = ProgressReport::count();
         $dischargeCount = Discharge::count();
         $billingCount = BillingStatement::count();
 
-        // Count of payments received
-        $receivedPaymentsCount = Payment::whereNotNull('paid_at')->count();
 
         // Roles & permissions and users
         $roles = Role::all();
@@ -124,36 +122,41 @@ class DashboardController extends Controller
         $noRoleCount = $usersNoRoles->count();
 
         // Financial KPIs
-        $totalRevenue = Payment::whereNotNull('paid_at')->sum('amount');
+        $totalRevenue = (float) InvoicePayment::whereNotNull('paid_at')->sum('amount');
+        $recentPayments = InvoicePayment::latest()->take(5)->get();
+        $receivedPaymentsCount = InvoicePayment::whereNotNull('paid_at')->count();
 
         // Last 6 months series
         $months = collect(range(0, 5))
             ->map(fn ($i) => Carbon::now()->startOfMonth()->subMonths(5 - $i));
 
-        $invoiceMonthly = Invoice::selectRaw("DATE_FORMAT(issue_date, '%Y-%m') as ym, SUM(amount) as total")
-            ->whereDate('issue_date', '>=', $months->first()->toDateString())
-            ->groupBy('ym')
-            ->orderBy('ym')
-            ->pluck('total', 'ym');
+        $startDate = $months->first()->toDateString();
 
-        $paymentMonthly = Payment::selectRaw("DATE_FORMAT(paid_at, '%Y-%m') as ym, SUM(amount) as total")
-            ->whereNotNull('paid_at')
-            ->whereDate('paid_at', '>=', $months->first()->toDateString())
-            ->groupBy('ym')
-            ->orderBy('ym')
-            ->pluck('total', 'ym');
+        $invoiceMonthly = Invoice::selectRaw("DATE_FORMAT(issue_date, '%Y-%m') as ym, SUM(amount) as total")
+        ->whereDate('issue_date', '>=', $startDate)
+        ->groupBy('ym')
+        ->orderBy('ym')
+        ->pluck('total', 'ym');
+    
+         $paymentMonthly = InvoicePayment::selectRaw("DATE_FORMAT(paid_at, '%Y-%m') as ym, SUM(amount) as total")
+        ->whereNotNull('paid_at')
+        ->whereDate('paid_at', '>=', $startDate)
+        ->groupBy('ym')
+        ->orderBy('ym')
+        ->pluck('total', 'ym');
 
         $chartLabels = $months->map(fn ($d) => $d->format('M Y'))->all();
         $chartKeys   = $months->map(fn ($d) => $d->format('Y-m'))->all();
-
+        
         $invoicesSeries = array_map(fn ($ym) => (float) ($invoiceMonthly[$ym] ?? 0), $chartKeys);
         $paymentsSeries = array_map(fn ($ym) => (float) ($paymentMonthly[$ym] ?? 0), $chartKeys);
-
+        
         $chart = [
             'labels'   => $chartLabels,
             'invoices' => $invoicesSeries,
             'payments' => $paymentsSeries,
         ];
+        
 
         // Recent audit logs
         $auditLogs = AuditLog::with('user')
@@ -196,6 +199,7 @@ class DashboardController extends Controller
             'auditLogs' => $auditLogs,
         ]);
     }
+
 
     protected function psychiatristDashboard()
     {
