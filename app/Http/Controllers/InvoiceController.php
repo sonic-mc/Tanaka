@@ -29,23 +29,41 @@ class InvoiceController extends Controller
     }
 
      // NEW: Download PDF
-     public function downloadPdf(Invoice $invoice)
+     public function downloadPdf($id)
      {
-         $invoice->load([
-             'patient:id,first_name,last_name,patient_code',
-             'payments' => fn ($q) => $q->latest(),
+         // Safe eager-load; do not attempt to eager load relationships that may not exist.
+         try {
+             $invoice = Invoice::with('patient')->findOrFail($id);
+         } catch (ModelNotFoundException $e) {
+             abort(404, 'Invoice not found.');
+         }
+ 
+         // Prefer a stored pdf_path attribute if you have one (add pdf_path to $fillable and DB when ready)
+         $pdfPath = $invoice->pdf_path ?? null;
+ 
+         if ($pdfPath) {
+             // If pdf_path is stored as "invoices/filename.pdf" and stored on 'public' disk:
+             $disk = Storage::disk('public');
+             if ($disk->exists($pdfPath)) {
+                 $fullPath = $disk->path($pdfPath);
+                 return response()->download($fullPath, basename($fullPath), [
+                     'Content-Type' => 'application/pdf',
+                 ]);
+             }
+         }
+ 
+         // Fallback to the conventional filename
+         $filename = 'invoice_' . $invoice->invoice_number . '.pdf';
+         $fullPath = storage_path('app/public/invoices/' . $filename);
+ 
+         if (!file_exists($fullPath)) {
+             // Helpful error to the user/admin — file missing
+             abort(404, 'Invoice PDF not found on server.');
+         }
+ 
+         return response()->download($fullPath, $filename, [
+             'Content-Type' => 'application/pdf',
          ]);
- 
-         $pdf = Pdf::loadView('invoices.pdf', [
-             'invoice' => $invoice,
-             'appName' => config('app.name'),
-         ])->setPaper('a4');
- 
-         $filename = 'Invoice-' . $invoice->invoice_number . '.pdf';
- 
-         return $pdf->download($filename);
-         // For inline preview in browser use:
-         // return $pdf->stream($filename);
      }
  
 }

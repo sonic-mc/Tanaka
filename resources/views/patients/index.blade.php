@@ -88,3 +88,4 @@
 
 {{ $patients->links() }}
 @endsection
+

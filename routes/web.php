@@ -173,6 +173,21 @@ Route::delete('nurse-assignments/{id}', [NurseAssignmentController::class, 'dest
 
 
 Route::resource('consultation_fees', ConsultationFeeController::class);
+  // download by invoice id -> will look for storage/app/public/invoices/invoice_{invoice_number}.pdf
+Route::get('invoices/{invoice}/download', function ($invoiceId) {
+    $invoice = \App\Models\Invoice::findOrFail($invoiceId);
+
+    $filename = 'invoice_' . $invoice->invoice_number . '.pdf';
+    $path = storage_path('app/public/invoices/' . $filename);
+
+    if (!file_exists($path)) {
+        abort(404, 'Invoice file not found.');
+    }
+
+    return response()->download($path, $filename, [
+        'Content-Type' => 'application/pdf',
+    ]);
+})->name('invoices.download')->middleware('auth');
 
 
 // Include billing routes

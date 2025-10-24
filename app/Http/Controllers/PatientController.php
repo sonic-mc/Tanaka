@@ -3,12 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\PatientDetail;
+use App\Models\ConsultationFee;
+use App\Models\Invoice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\QueryException;
+use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf; // ensure barryvdh/laravel-dompdf is installed
 
 class PatientController extends Controller
 {
@@ -56,82 +60,161 @@ class PatientController extends Controller
     }
 
     // Store new patient (patient_code is auto-generated, not accepted from input)
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            // Identification (patient_code removed; it's generated)
-            'first_name' => ['required', 'string', 'max:100'],
-            'middle_name' => ['nullable', 'string', 'max:100'],
-            'last_name' => ['required', 'string', 'max:100'],
-            'gender' => ['required', Rule::in(['male', 'female', 'other'])],
-            'dob' => ['nullable', 'date'],
-            'national_id_number' => ['nullable', 'string', 'max:255', 'unique:patient_details,national_id_number'],
-            'passport_number' => ['nullable', 'string', 'max:255', 'unique:patient_details,passport_number'],
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+   // (Place this method inside your existing PatientController class)
 
-            // Contact & Demographics
-            'email' => ['nullable', 'email'],
-            'contact_number' => ['nullable', 'string', 'max:20'],
-            'residential_address' => ['nullable', 'string', 'max:255'],
-            'race' => ['nullable', 'string', 'max:50'],
-            'religion' => ['nullable', 'string', 'max:50'],
-            'language' => ['nullable', 'string', 'max:50'],
-            'denomination' => ['nullable', 'string', 'max:50'],
-            'marital_status' => ['nullable', 'string', 'max:50'],
-            'occupation' => ['nullable', 'string', 'max:100'],
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        // Identification (patient_code removed; it's generated)
+        'first_name' => ['required', 'string', 'max:100'],
+        'middle_name' => ['nullable', 'string', 'max:100'],
+        'last_name' => ['required', 'string', 'max:100'],
+        'gender' => ['required', Rule::in(['male', 'female', 'other'])],
+        'dob' => ['nullable', 'date'],
+        'national_id_number' => ['nullable', 'string', 'max:255', 'unique:patient_details,national_id_number'],
+        'passport_number' => ['nullable', 'string', 'max:255', 'unique:patient_details,passport_number'],
+        'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
 
-            // Medical Info
-            'blood_group' => ['nullable', 'string', 'max:10'],
-            'allergies' => ['nullable', 'string', 'max:255'],
-            'disabilities' => ['nullable', 'string', 'max:255'],
-            'special_diet' => ['nullable', 'string', 'max:255'],
-            'medical_aid_provider' => ['nullable', 'string', 'max:100'],
-            'medical_aid_number' => ['nullable', 'string', 'max:50'],
-            'special_medical_requirements' => ['nullable', 'string'],
-            'current_medications' => ['nullable', 'string'],
-            'past_medical_history' => ['nullable', 'string'],
+        // Contact & Demographics
+        'email' => ['nullable', 'email'],
+        'contact_number' => ['nullable', 'string', 'max:20'],
+        'residential_address' => ['nullable', 'string', 'max:255'],
+        'race' => ['nullable', 'string', 'max:50'],
+        'religion' => ['nullable', 'string', 'max:50'],
+        'language' => ['nullable', 'string', 'max:50'],
+        'denomination' => ['nullable', 'string', 'max:50'],
+        'marital_status' => ['nullable', 'string', 'max:50'],
+        'occupation' => ['nullable', 'string', 'max:100'],
 
-            // Next of Kin
-            'next_of_kin_name' => ['nullable', 'string', 'max:100'],
-            'next_of_kin_relationship' => ['nullable', 'string', 'max:50'],
-            'next_of_kin_contact_number' => ['nullable', 'string', 'max:20'],
-            'next_of_kin_email' => ['nullable', 'email'],
-            'next_of_kin_address' => ['nullable', 'string', 'max:255'],
-        ]);
+        // Medical Info
+        'blood_group' => ['nullable', 'string', 'max:10'],
+        'allergies' => ['nullable', 'string', 'max:255'],
+        'disabilities' => ['nullable', 'string', 'max:255'],
+        'special_diet' => ['nullable', 'string', 'max:255'],
+        'medical_aid_provider' => ['nullable', 'string', 'max:100'],
+        'medical_aid_number' => ['nullable', 'string', 'max:50'],
+        'special_medical_requirements' => ['nullable', 'string'],
+        'current_medications' => ['nullable', 'string'],
+        'past_medical_history' => ['nullable', 'string'],
 
-        // Handle photo upload
-        if ($request->hasFile('photo')) {
-            $validated['photo'] = $request->file('photo')->store('patients', 'public');
-        }
+        // Next of Kin
+        'next_of_kin_name' => ['nullable', 'string', 'max:100'],
+        'next_of_kin_relationship' => ['nullable', 'string', 'max:50'],
+        'next_of_kin_contact_number' => ['nullable', 'string', 'max:20'],
+        'next_of_kin_email' => ['nullable', 'email'],
+        'next_of_kin_address' => ['nullable', 'string', 'max:255'],
+    ]);
 
-        $validated['created_by'] = Auth::id();
-
-        // Generate unique patient_code safely with retries
-        $maxAttempts = 5;
-        $attempt = 0;
-        do {
-            try {
-                DB::transaction(function () use (&$validated) {
-                    // Lock the last code row to reduce race windows
-                    $validated['patient_code'] = $this->generateNextPatientCode();
-                    PatientDetail::create($validated);
-                });
-
-                // Success
-                return redirect()->route('patients.index')->with('success', 'Patient registered successfully.');
-            } catch (QueryException $e) {
-                // Unique violation on patient_code -> retry
-                if ($this->isUniqueConstraintViolation($e)) {
-                    $attempt++;
-                    usleep(random_int(10_000, 50_000));
-                    continue;
-                }
-                throw $e;
-            }
-        } while ($attempt < $maxAttempts);
-
-        return back()->withInput()->withErrors(['patient_code' => 'Could not generate a unique patient code. Please try again.']);
+    // Handle photo upload
+    if ($request->hasFile('photo')) {
+        $validated['photo'] = $request->file('photo')->store('patients', 'public');
     }
+
+    $validated['created_by'] = Auth::id();
+
+    // Generate unique patient_code safely with retries
+    $maxAttempts = 5;
+    $attempt = 0;
+    do {
+        try {
+            $createdInvoice = null;
+            $createdPatient = null;
+            $savedPdfFilename = null;
+
+            DB::transaction(function () use (&$validated, &$createdPatient, &$createdInvoice, &$savedPdfFilename) {
+                // Lock the last code row to reduce race windows and create patient
+                $validated['patient_code'] = $this->generateNextPatientCode();
+                $createdPatient = PatientDetail::create($validated);
+
+                // Determine age
+                $age = null;
+                if ($createdPatient->dob) {
+                    $age = Carbon::parse($createdPatient->dob)->age;
+                }
+
+                // Decide age group
+                $ageGroup = ($age !== null && $age < 18) ? 'child' : 'adult';
+
+                // Lookup consultation fee (prefer most recent)
+                $fee = ConsultationFee::where('age_group', $ageGroup)->orderByDesc('id')->first();
+
+                // Fallback: if no matching fee found, try any fee
+                if (!$fee) {
+                    $fee = ConsultationFee::orderByDesc('id')->first();
+                }
+
+                if ($fee) {
+                    // Create invoice
+                    $invoiceData = [
+                        'patient_id' => $createdPatient->id,
+                        'created_by' => $createdPatient->created_by ?? Auth::id(),
+                        'invoice_number' => $this->generateNextInvoiceNumber(),
+                        'amount' => $fee->fee_amount,
+                        'balance_due' => $fee->fee_amount,
+                        'status' => 'unpaid',
+                        'issue_date' => now()->toDateString(),
+                        'due_date' => now()->addDays(30)->toDateString(),
+                        'notes' => 'Auto-generated consultation fee (' . $fee->age_group . ') - ' . ($fee->description ?? ''),
+                    ];
+
+                    $createdInvoice = Invoice::create($invoiceData);
+
+                    // Generate PDF bytes (if DomPDF is available)
+                    if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+                        $patientForPdf = $createdPatient;
+                        $invoiceForPdf = $createdInvoice;
+
+                        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.pdf', [
+                            'invoice' => $invoiceForPdf,
+                            'patient' => $patientForPdf,
+                        ]);
+
+                        $pdfBytes = $pdf->output();
+
+                        // Save PDF to storage/app/public/invoices/
+                        $filename = 'invoice_' . $createdInvoice->invoice_number . '.pdf';
+                        $path = 'invoices/' . $filename;
+                        Storage::disk('public')->put($path, $pdfBytes);
+
+                        // Optionally: persist pdf path to invoice if you add a column later
+                        // $createdInvoice->update(['pdf_path' => $path]);
+
+                        $savedPdfFilename = $filename;
+                    }
+                }
+            });
+
+            // Transaction committed successfully.
+            // Redirect to the created patient's show page, including new invoice id and filename (if any) in session.
+            $flashMessage = 'Patient registered successfully.' . (isset($createdInvoice) && $createdInvoice ? ' Invoice created.' : '');
+
+            $redirect = redirect()->route('patients.show', $createdPatient->id)->with('success', $flashMessage);
+
+            if (!empty($savedPdfFilename) && isset($createdInvoice->id)) {
+                // Pass the invoice id and filename so the show view can offer the download button
+                $redirect = $redirect->with('new_invoice_id', $createdInvoice->id)
+                                     ->with('new_invoice_file', $savedPdfFilename);
+            } elseif (isset($createdInvoice->id)) {
+                // No PDF generated (DomPDF missing) but an invoice was created — still pass invoice id
+                $redirect = $redirect->with('new_invoice_id', $createdInvoice->id);
+            }
+
+            return $redirect;
+
+        } catch (QueryException $e) {
+            // Unique violation on patient_code -> retry
+            if ($this->isUniqueConstraintViolation($e)) {
+                $attempt++;
+                usleep(random_int(10_000, 50_000));
+                continue;
+            }
+            throw $e;
+        }
+    } while ($attempt < $maxAttempts);
+
+    return back()->withInput()->withErrors(['patient_code' => 'Could not generate a unique patient code. Please try again.']);
+}
+
 
     // Show single patient
     public function show($id)
@@ -293,6 +376,25 @@ class PatientController extends Controller
             ->orderBy('patient_code', 'desc')
             ->lockForUpdate()
             ->value('patient_code');
+
+        $num = 0;
+        if ($last && preg_match('/^' . preg_quote($prefix, '/') . '(\d+)$/', $last, $m)) {
+            $num = (int) $m[1];
+        }
+        return $prefix . str_pad($num + 1, $pad, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Generate next invoice number in an atomic fashion.
+     * Uses invoices table (invoicess) to find the last invoice_number and lock for update.
+     */
+    protected function generateNextInvoiceNumber(string $prefix = 'INV', int $pad = 6): string
+    {
+        // Note: this method should be called within a transaction
+        $last = Invoice::withTrashed()
+            ->orderBy('invoice_number', 'desc')
+            ->lockForUpdate()
+            ->value('invoice_number');
 
         $num = 0;
         if ($last && preg_match('/^' . preg_quote($prefix, '/') . '(\d+)$/', $last, $m)) {
