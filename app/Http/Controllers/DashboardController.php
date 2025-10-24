@@ -298,11 +298,28 @@ class DashboardController extends Controller
         $dischargesToday = Admission::where('status', 'discharged')->whereDate('updated_at', $today)->with('patient')->get();
         $pendingEvaluations = PatientEvaluation::whereDate('evaluation_date', $today)->with('patient')->get();
 
+         // Fetch the 2 most recently created patients from patient_details table
+         $recentPatients = PatientDetail::orderByDesc('created_at')->take(2)->get();
+
+          // Count invoices where status is "unpaid" or "partially_paid"
+        $pendingPaymentsToday = Invoice::whereIn('status', ['unpaid', 'partially_paid'])->count();
+        $therapySessionsCount = TherapySession::count();
+
+        $recentAdmissions = Admission::with('patient')
+        ->where('status', 'active')
+        ->orderByDesc('admission_date')
+        ->take(2)
+        ->get();
+
         return view('clinician.dashboard', compact(
             'newPatientsToday',
             'activeAdmissions',
             'dischargesToday',
-            'pendingEvaluations'
+            'pendingEvaluations',
+            'recentAdmissions',
+            'recentPatients',
+            'pendingPaymentsToday',
+            'therapySessionsCount'
         ));
     }
 

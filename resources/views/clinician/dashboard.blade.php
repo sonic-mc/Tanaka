@@ -179,8 +179,8 @@
             <div class="card-body">
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item d-flex justify-content-between align-items-center">
-                        Appointments
-                        <span class="badge text-bg-primary">{{ $appointmentsToday ?? 0 }}</span>
+                        Therapy Sessions
+                        <span class="badge text-bg-primary">{{  $therapySessionsCount ?? 0 }}</span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         Walk-ins
@@ -200,34 +200,35 @@
 
     <!-- Admissions by Ward (optional dataset) -->
     <div class="col-12 col-lg-4">
-        <div class="card shadow-sm card-zoom">
-            <div class="card-header bg-transparent fw-semibold">
-                Active Admissions by Ward
-            </div>
-            <div class="card-body">
-                @php
-                    $wardTotals = isset($admissionsByWard) && count($admissionsByWard) > 0 ? collect($admissionsByWard) : collect();
-                    $sum = max(1, (int) $wardTotals->sum('total')); // prevent division by zero
-                @endphp
-                @if($wardTotals->isNotEmpty())
-                    @foreach($wardTotals as $row)
-                        @php
-                            $pct = round(($row['total'] ?? 0) * 100 / $sum);
-                        @endphp
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <div class="text-truncate me-2">{{ $row['name'] ?? 'Ward' }}</div>
-                            <span class="badge text-bg-secondary">{{ $row['total'] ?? 0 }}</span>
-                        </div>
-                        <div class="progress mb-2" style="height: 6px;">
-                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ $pct }}%" aria-valuenow="{{ $pct }}" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                    @endforeach
-                @else
-                    <div class="text-muted-small">No ward breakdown available.</div>
-                @endif
-            </div>
+     <div class="card shadow-sm card-zoom">
+        <div class="card-header bg-transparent fw-semibold">
+            Recent Admissions
         </div>
+        @if(isset($recentAdmissions) && $recentAdmissions->isNotEmpty())
+            @foreach($recentAdmissions as $admission)
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ $admission->patient->first_name }} {{ $admission->patient->last_name }}
+                    </li>
+                    </ul>
+                    <div class="text-muted-small">
+                        Admitted on {{ \Carbon\Carbon::parse($admission->admission_date)->format('M d, Y') }}
+                        @if($admission->room_number)
+                            — Room {{ $admission->room_number }}
+                        @endif
+                    </div>
+                    <div class="text-muted-small fst-italic">
+                        {{ Str::limit($admission->admission_reason, 80) }}
+                    </div>
+                </div>
+            @endforeach
+        @else
+            <div class="text-muted-small">No recent admissions found.</div>
+        @endif
     </div>
+</div>
+    
 </div>
 
 <!-- Bottom Row: Recent Patients (optional) -->
@@ -239,7 +240,7 @@
                 <a href="{{ route('patients.index') }}" class="btn btn-sm btn-outline-secondary">See all</a>
             </div>
             <div class="card-body">
-                @if(isset($recentPatients) && count($recentPatients))
+                @if(isset($recentPatients) && $recentPatients->count())
                     <div class="table-responsive">
                         <table class="table align-middle mb-0">
                             <thead>
@@ -263,15 +264,15 @@
                                                 <div class="bg-secondary-subtle border rounded-circle d-inline-block" style="width:42px;height:42px;"></div>
                                             @endif
                                             <div>
-                                                <div class="fw-semibold text-truncate">{{ $p->first_name }} {{ $p->last_name }}</div>
-                                                <div class="text-muted-small">{{ $p->email }}</div>
+                                                <div class="fw-semibold text-truncate">{{ $p->full_name ?? ($p->first_name.' '.$p->last_name) }}</div>
+                                                <div class="text-muted-small">{{ $p->email ?: '—' }}</div>
                                             </div>
                                         </td>
                                         <td><span class="badge text-bg-light border">{{ $p->patient_code }}</span></td>
-                                        <td>{{ ucfirst($p->gender) }}</td>
-                                        <td>{{ optional($p->dob)->format('Y-m-d') }}</td>
-                                        <td>{{ $p->contact_number }}</td>
-                                        <td>{{ $p->created_at?->diffForHumans() }}</td>
+                                        <td>{{ $p->gender ? ucfirst($p->gender) : '—' }}</td>
+                                        <td>{{ $p->dob ? $p->dob->format('Y-m-d') : '—' }}</td>
+                                        <td>{{ $p->contact_number ?: '—' }}</td>
+                                        <td>{{ $p->created_at?->diffForHumans() ?: '—' }}</td>
                                         <td class="text-end">
                                             <a href="{{ route('patients.show', $p->id) }}" class="btn btn-sm btn-outline-primary">View</a>
                                             <a href="{{ route('patients.edit', $p->id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
