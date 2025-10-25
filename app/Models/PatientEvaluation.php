@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Concerns\AutoGradesEvaluation;
 
 class PatientEvaluation extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, AutoGradesEvaluation;
 
     protected $fillable = [
         'patient_id',
@@ -24,12 +25,17 @@ class PatientEvaluation extends Model
         'decision_made_at',
         'created_by',
         'last_modified_by',
+        // Grading fields
+        'severity_level',
+        'risk_level',
+        'priority_score',
     ];
 
     protected $casts = [
         'evaluation_date' => 'date',
         'requires_admission' => 'boolean',
         'decision_made_at' => 'datetime',
+        'priority_score' => 'integer',
     ];
 
     public function patient()
@@ -52,7 +58,15 @@ class PatientEvaluation extends Model
         return $this->belongsTo(User::class, 'last_modified_by');
     }
 
-    // Scopes
+    /**
+     * Legacy method name preserved: compute and persist grading now via service.
+     */
+    public function determineGrading(): void
+    {
+        app(\App\Services\EvaluationGradingService::class)->apply($this);
+    }
+
+    // Scopes used elsewhere...
     public function scopeOfType($query, ?string $type)
     {
         if ($type) {

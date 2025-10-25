@@ -24,6 +24,40 @@
                 <div class="mb-2"><strong>Last Modified:</strong> {{ $evaluation->updated_at?->format('Y-m-d H:i') }} by {{ $evaluation->lastModifier?->name ?? $evaluation->last_modified_by }}</div>
             </div>
         </div>
+
+        <hr>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <strong>Severity Level:</strong>
+                @php
+                    $sev = strtolower($evaluation->severity_level ?? 'mild');
+                    $sevClass = match($sev) {
+                        'critical' => 'bg-dark',
+                        'severe' => 'bg-danger',
+                        'moderate' => 'bg-warning text-dark',
+                        default => 'bg-success',
+                    };
+                @endphp
+                <span class="badge {{ $sevClass }}">{{ ucfirst($sev) }}</span>
+            </div>
+            <div class="col-md-4">
+                <strong>Risk Level:</strong>
+                @php
+                    $risk = strtolower($evaluation->risk_level ?? 'low');
+                    $riskClass = match($risk) {
+                        'high' => 'bg-danger',
+                        'medium' => 'bg-warning text-dark',
+                        default => 'bg-success',
+                    };
+                @endphp
+                <span class="badge {{ $riskClass }}">{{ ucfirst($risk) }}</span>
+            </div>
+            <div class="col-md-4">
+                <strong>Priority Score:</strong>
+                <span class="badge bg-primary">{{ $evaluation->priority_score !== null ? $evaluation->priority_score : '—' }}</span>
+            </div>
+        </div>
     </div>
 </div>
 

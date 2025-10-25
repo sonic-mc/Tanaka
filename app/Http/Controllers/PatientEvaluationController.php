@@ -68,7 +68,7 @@ class PatientEvaluationController extends Controller
         return view('evaluations.create', compact('patients', 'selectedPatientId'));
     }
 
-    // Persist new evaluation
+    // Persist new evaluation (now includes severity_level, risk_level, priority_score)
     public function store(StorePatientEvaluationRequest $request)
     {
         $userId = Auth::id();
@@ -90,6 +90,10 @@ class PatientEvaluationController extends Controller
                 'requires_admission' => (bool) $request->requires_admission,
                 'admission_trigger_notes' => $request->admission_trigger_notes,
                 'decision_made_at' => now(),
+                // New grading fields (with safe defaults)
+                'severity_level' => $this->sanitizeSeverity($request->input('severity_level', 'mild')),
+                'risk_level' => $this->sanitizeRisk($request->input('risk_level', 'low')),
+                'priority_score' => $this->sanitizePriority($request->input('priority_score')),
                 'created_by' => $userId,
             ]);
 
@@ -133,6 +137,11 @@ class PatientEvaluationController extends Controller
                 $bodyLines[] = "Evaluation date: " . optional($createdEvaluation->evaluation_date)->format('Y-m-d');
                 $bodyLines[] = "Evaluation type: " . ucfirst($createdEvaluation->evaluation_type);
                 $bodyLines[] = "Decision: " . ucfirst($createdEvaluation->decision);
+                // New grading fields in email
+                $bodyLines[] = "Severity: " . ucfirst($createdEvaluation->severity_level ?? 'mild');
+                $bodyLines[] = "Risk: " . ucfirst($createdEvaluation->risk_level ?? 'low');
+                $bodyLines[] = "Priority score: " . ($createdEvaluation->priority_score !== null ? $createdEvaluation->priority_score : '—');
+
                 if ($createdEvaluation->presenting_complaints) {
                     $bodyLines[] = "";
                     $bodyLines[] = "Presenting complaints:";
@@ -222,7 +231,7 @@ class PatientEvaluationController extends Controller
         return view('evaluations.edit', compact('evaluation', 'patients'));
     }
 
-    // Update record
+    // Update record (now includes severity_level, risk_level, priority_score)
     public function update(UpdatePatientEvaluationRequest $request, PatientEvaluation $evaluation)
     {
         $userId = Auth::id();
@@ -244,6 +253,10 @@ class PatientEvaluationController extends Controller
                 'admission_trigger_notes' => $request->admission_trigger_notes,
                 'last_modified_by' => $userId,
                 'decision_made_at' => $changedDecision ? now() : $evaluation->decision_made_at,
+                // New grading fields
+                'severity_level' => $this->sanitizeSeverity($request->input('severity_level', $evaluation->severity_level ?? 'mild')),
+                'risk_level' => $this->sanitizeRisk($request->input('risk_level', $evaluation->risk_level ?? 'low')),
+                'priority_score' => $this->sanitizePriority($request->input('priority_score', $evaluation->priority_score)),
             ]);
 
             // Admission creation on update if newly requiring admission and none active
@@ -282,6 +295,11 @@ class PatientEvaluationController extends Controller
                 $bodyLines[] = "";
                 $bodyLines[] = "Evaluation date: " . optional($evaluation->evaluation_date)->format('Y-m-d');
                 $bodyLines[] = "Decision: " . ucfirst($evaluation->decision);
+                // New grading fields in email
+                $bodyLines[] = "Severity: " . ucfirst($evaluation->severity_level ?? 'mild');
+                $bodyLines[] = "Risk: " . ucfirst($evaluation->risk_level ?? 'low');
+                $bodyLines[] = "Priority score: " . ($evaluation->priority_score !== null ? $evaluation->priority_score : '—');
+
                 if ($evaluation->presenting_complaints) {
                     $bodyLines[] = "";
                     $bodyLines[] = "Presenting complaints:";
@@ -369,5 +387,30 @@ class PatientEvaluationController extends Controller
         $evaluation->forceDelete();
 
         return redirect()->route('evaluations.index', ['status' => 'trashed'])->with('success', 'Evaluation permanently deleted.');
+    }
+
+    private function sanitizeSeverity(?string $val): string
+    {
+        $allowed = ['mild', 'moderate', 'severe', 'critical'];
+        $val = strtolower((string) $val);
+        return in_array($val, $allowed, true) ? $val : 'mild';
+    }
+
+    private function sanitizeRisk(?string $val): string
+    {
+        $allowed = ['low', 'medium', 'high'];
+        $val = strtolower((string) $val);
+        return in_array($val, $allowed, true) ? $val : 'low';
+    }
+
+    private function sanitizePriority($val): ?int
+    {
+        if ($val === null || $val === '') {
+            return null;
+        }
+        $n = (int) $val;
+        if ($n < 1) $n = 1;
+        if ($n > 10) $n = 10;
+        return $n;
     }
 }

@@ -34,9 +34,13 @@
                             <tr>
                                 <td>{{ $ad->patient->first_name ?? '' }} {{ $ad->patient->last_name ?? '' }}</td>
                                 <td>{{ $ad->patient->patient_code ?? '' }}</td>
-                                <td>{{ optional($ad->admission_date)->format('Y-m-d') }}</td>
+                                <td>
+                                    {{ $ad->admission_date
+                                        ? \Illuminate\Support\Carbon::parse($ad->admission_date)->format('Y-m-d')
+                                        : '—' }}
+                                </td>
                                 <td>{{ $ad->room_number ?? '—' }}</td>
-                                <td>{{ $ad->care_level_id ?? '—' }}</td>
+                                <td>{{ $ad->careLevel->name ?? ($ad->care_level_id ?? '—') }}</td>
                                 <td>
                                     <span class="badge bg-{{ $ad->status === 'active' ? 'success' : ($ad->status === 'discharged' ? 'secondary' : 'warning') }}">
                                         {{ ucfirst($ad->status) }}

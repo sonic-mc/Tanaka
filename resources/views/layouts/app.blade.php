@@ -210,6 +210,13 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a href="{{ route('grading.index') }}" 
+                   class="nav-link {{ request()->routeIs('grading.*') ? 'active' : '' }}">
+                    <i class="bi bi-bar-chart-line me-2"></i> Patient Grading
+                </a>
+            </li>
+            
+            <li class="nav-item">
                 <a href="{{ route('admissions.index') }}" class="nav-link {{ request()->routeIs('admissions.*') ? 'active' : '' }}">
                     <i class="bi bi-hospital me-2"></i> Admissions Management
                 </a>

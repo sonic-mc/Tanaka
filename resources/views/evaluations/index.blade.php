@@ -70,6 +70,9 @@
                     <th>Date</th>
                     <th>Type</th>
                     <th>Decision</th>
+                    <th>Severity</th>
+                    <th>Risk</th>
+                    <th>Priority</th>
                     <th>Psychiatrist</th>
                     <th>Status</th>
                     <th class="text-end" style="width: 260px;">Actions</th>
@@ -77,6 +80,21 @@
             </thead>
             <tbody>
                 @forelse($evaluations as $eval)
+                    @php
+                        $sev = strtolower($eval->severity_level ?? 'mild');
+                        $sevClass = match($sev) {
+                            'critical' => 'bg-dark',
+                            'severe' => 'bg-danger',
+                            'moderate' => 'bg-warning text-dark',
+                            default => 'bg-success',
+                        };
+                        $risk = strtolower($eval->risk_level ?? 'low');
+                        $riskClass = match($risk) {
+                            'high' => 'bg-danger',
+                            'medium' => 'bg-warning text-dark',
+                            default => 'bg-success',
+                        };
+                    @endphp
                     <tr @if($eval->deleted_at) class="table-warning" @endif>
                         <td>
                             <div class="fw-semibold">{{ $eval->patient?->first_name }} {{ $eval->patient?->last_name }}</div>
@@ -85,6 +103,9 @@
                         <td>{{ optional($eval->evaluation_date)->format('Y-m-d') }}</td>
                         <td>{{ ucfirst($eval->evaluation_type) }}</td>
                         <td>{{ ucfirst($eval->decision) }}</td>
+                        <td><span class="badge {{ $sevClass }}">{{ ucfirst($sev) }}</span></td>
+                        <td><span class="badge {{ $riskClass }}">{{ ucfirst($risk) }}</span></td>
+                        <td>{{ $eval->priority_score !== null ? $eval->priority_score : '—' }}</td>
                         <td>{{ $eval->psychiatrist?->name ?? '—' }}</td>
                         <td>{{ $eval->deleted_at ? 'Archived' : 'Active' }}</td>
                         <td class="text-end">
@@ -108,7 +129,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="7" class="text-center text-muted">No evaluations found.</td></tr>
+                    <tr><td colspan="10" class="text-center text-muted">No evaluations found.</td></tr>
                 @endforelse
             </tbody>
         </table>

@@ -27,6 +27,7 @@ use App\Http\Controllers\DashboardNotificationController;
 use App\Http\Controllers\PatientEvaluationController;
 use App\Http\Controllers\NurseAssignmentController;
 use App\Http\Controllers\ConsultationFeeController;
+use App\Http\Controllers\GradingController;
 
 
 
@@ -155,7 +156,9 @@ Route::resource('patients', PatientController::class);
 Route::post('patients/{id}/restore', [PatientController::class, 'restore'])->name('patients.restore');
 Route::delete('patients/{id}/force-delete', [PatientController::class, 'forceDelete'])->name('patients.force-delete');
 
-
+Route::get('/grading', [GradingController::class, 'index'])->name('grading.index');
+    Route::get('/grading/{evaluation}', [GradingController::class, 'show'])->name('grading.show');
+    Route::post('/grading/{evaluation}/recalculate', [GradingController::class, 'recalculate'])->name('grading.recalculate');
 
 
 Route::get('nurse-assignments', [NurseAssignmentController::class, 'index'])->name('nurse-assignments.index');

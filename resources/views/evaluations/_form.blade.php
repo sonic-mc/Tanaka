@@ -95,6 +95,35 @@
     </div>
 </div>
 
+<div class="col-12">
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label">Severity Level <span class="text-danger">*</span></label>
+            @php $sev = old('severity_level', $evaluation->severity_level ?? 'mild'); @endphp
+            <select name="severity_level" class="form-select" required>
+                <option value="mild" @selected($sev==='mild')>Mild</option>
+                <option value="moderate" @selected($sev==='moderate')>Moderate</option>
+                <option value="severe" @selected($sev==='severe')>Severe</option>
+                <option value="critical" @selected($sev==='critical')>Critical</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Risk Level <span class="text-danger">*</span></label>
+            @php $risk = old('risk_level', $evaluation->risk_level ?? 'low'); @endphp
+            <select name="risk_level" class="form-select" required>
+                <option value="low" @selected($risk==='low')>Low</option>
+                <option value="medium" @selected($risk==='medium')>Medium</option>
+                <option value="high" @selected($risk==='high')>High</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Priority Score (1–10)</label>
+            <input type="number" name="priority_score" min="1" max="10" step="1" class="form-control"
+                   value="{{ old('priority_score', $evaluation->priority_score ?? '') }}" placeholder="Optional">
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
@@ -138,7 +167,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 a.className = 'list-group-item list-group-item-action';
                 a.textContent = item.label;
                 a.addEventListener('click', () => {
-                    // Ensure selected option exists in select
                     let opt = [...selectPatient.options].find(o => o.value === String(item.id));
                     if (!opt) {
                         opt = new Option(item.label, item.id, true, true);
