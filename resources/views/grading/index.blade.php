@@ -8,45 +8,90 @@
     </div>
 </div>
 
-<div class="card mb-3">
-    <div class="card-body">
-        <form method="GET" class="row g-2">
-            <div class="col-12 col-md-3">
-                <input type="text" name="q" class="form-control" placeholder="Search patient (code/name)" value="{{ $filters['q'] ?? '' }}">
+<div class="row g-3 mb-3">
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body d-flex flex-column justify-content-between" style="min-height: 300px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">Patients by Severity</h6>
+                        <small class="text-muted">Latest Evaluation</small>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge bg-success">Mild: {{ $severityCounts['mild'] }}</span>
+                        <span class="badge bg-warning text-dark">Moderate: {{ $severityCounts['moderate'] }}</span>
+                        <span class="badge bg-danger">Severe: {{ $severityCounts['severe'] }}</span>
+                        <span class="badge bg-dark">Critical: {{ $severityCounts['critical'] }}</span>
+                    </div>
+                </div>
+                <div class="flex-grow-1">
+                    <canvas id="severityBar" style="max-height: 200px;"></canvas>
+                </div>
             </div>
-            <div class="col-6 col-md-2">
-                @php $severity = $filters['severity'] ?? '' @endphp
-                <select name="severity" class="form-select">
-                    <option value="">All Severities</option>
-                    <option value="mild" @selected($severity==='mild')>Mild</option>
-                    <option value="moderate" @selected($severity==='moderate')>Moderate</option>
-                    <option value="severe" @selected($severity==='severe')>Severe</option>
-                    <option value="critical" @selected($severity==='critical')>Critical</option>
-                </select>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body d-flex flex-column justify-content-between" style="min-height: 300px;">
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">Patients by Risk</h6>
+                        <small class="text-muted">Latest Evaluation</small>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge bg-success">Low: {{ $riskCounts['low'] }}</span>
+                        <span class="badge bg-warning text-dark">Medium: {{ $riskCounts['medium'] }}</span>
+                        <span class="badge bg-danger">High: {{ $riskCounts['high'] }}</span>
+                    </div>
+                </div>
+                <div class="flex-grow-1">
+                    <canvas id="riskPie" style="max-height: 200px;"></canvas>
+                </div>
             </div>
-            <div class="col-6 col-md-2">
-                @php $risk = $filters['risk'] ?? '' @endphp
-                <select name="risk" class="form-select">
-                    <option value="">All Risks</option>
-                    <option value="low" @selected($risk==='low')>Low</option>
-                    <option value="medium" @selected($risk==='medium')>Medium</option>
-                    <option value="high" @selected($risk==='high')>High</option>
-                </select>
+        </div>
+    </div>
+</div>
+
+
+<!-- Summary badges -->
+<div class="row g-3 mb-3">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0">Patients by Severity (latest evaluation)</h6>
+                    <small class="text-muted">Totals</small>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge bg-success">Mild: {{ $severityCounts['mild'] }}</span>
+                    <span class="badge bg-warning text-dark">Moderate: {{ $severityCounts['moderate'] }}</span>
+                    <span class="badge bg-danger">Severe: {{ $severityCounts['severe'] }}</span>
+                    <span class="badge bg-dark">Critical: {{ $severityCounts['critical'] }}</span>
+                </div>
+                <div class="mt-3">
+                    <canvas id="severityBar"></canvas>
+                </div>
             </div>
-            <div class="col-6 col-md-2">
-                @php $decision = $filters['decision'] ?? '' @endphp
-                <select name="decision" class="form-select">
-                    <option value="">All Decisions</option>
-                    <option value="admit" @selected($decision==='admit')>Admit</option>
-                    <option value="outpatient" @selected($decision==='outpatient')>Outpatient</option>
-                    <option value="refer" @selected($decision==='refer')>Refer</option>
-                    <option value="monitor" @selected($decision==='monitor')>Monitor</option>
-                </select>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0">Patients by Risk (latest evaluation)</h6>
+                    <small class="text-muted">Totals</small>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge bg-success">Low: {{ $riskCounts['low'] }}</span>
+                    <span class="badge bg-warning text-dark">Medium: {{ $riskCounts['medium'] }}</span>
+                    <span class="badge bg-danger">High: {{ $riskCounts['high'] }}</span>
+                </div>
+                <div class="mt-3">
+                    <canvas id="riskPie"></canvas>
+                </div>
             </div>
-            <div class="col-6 col-md-2 d-grid">
-                <button class="btn btn-outline-secondary">Apply</button>
-            </div>
-        </form>
+        </div>
     </div>
 </div>
 
@@ -114,3 +159,61 @@
     @endif
 </div>
 @endsection
+
+@push('scripts')
+<!-- Chart.js CDN (v4) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" integrity="sha256-Cv3psZ2/2NzmNo0+fD3oDg1o0G3E9dkXAhFQ8v4u3Xg=" crossorigin="anonymous"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const severityCfg = @json($chartData['severity']);
+    const riskCfg = @json($chartData['risk']);
+
+    // Severity bar chart
+    const ctxSeverity = document.getElementById('severityBar').getContext('2d');
+    new Chart(ctxSeverity, {
+        type: 'bar',
+        data: {
+            labels: severityCfg.labels,
+            datasets: [{
+                label: 'Patients',
+                data: severityCfg.data,
+                backgroundColor: severityCfg.colors,
+                borderColor: '#e5e7eb',
+                borderWidth: 1,
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true, ticks: { precision: 0 } }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: { mode: 'index', intersect: false }
+            }
+        }
+    });
+
+    // Risk pie chart
+    const ctxRisk = document.getElementById('riskPie').getContext('2d');
+    new Chart(ctxRisk, {
+        type: 'pie',
+        data: {
+            labels: riskCfg.labels,
+            datasets: [{
+                data: riskCfg.data,
+                backgroundColor: riskCfg.colors,
+                borderColor: '#ffffff',
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+});
+</script>
+@endpush
