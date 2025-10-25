@@ -55,7 +55,7 @@
 
 
 <!-- Summary badges -->
-<div class="row g-3 mb-3">
+{{-- <div class="row g-3 mb-3">
     <div class="col-md-6">
         <div class="card h-100">
             <div class="card-body">
@@ -93,7 +93,7 @@
             </div>
         </div>
     </div>
-</div>
+</div> --}}
 
 <div class="card">
     <div class="table-responsive">
