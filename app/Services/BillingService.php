@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\BillingStatement;
 use App\Models\Invoice;
-use App\Models\Payment;
+use App\Models\InvoicePayment;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -39,7 +39,7 @@ class BillingService
     /**
      * Apply a payment to an invoice and update billing statement.
      */
-    public function applyPayment(Invoice $invoice, array $data): Payment
+    public function applyPayment(Invoice $invoice, array $data): InvoicePayment
     {
         return DB::transaction(function () use ($invoice, $data) {
             $amount = (float) $data['amount'];
@@ -56,7 +56,7 @@ class BillingService
                 ]);
             }
 
-            $payment = new Payment();
+            $payment = new InvoicePayment();
             $payment->invoice_id = $invoice->id;
             $payment->patient_id = $invoice->patient_id; // derive from invoice
             $payment->received_by = $data['received_by'] ?? null;
