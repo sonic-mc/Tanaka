@@ -40,11 +40,11 @@
             </select>
         </div>
 
+        <!-- Transaction reference is system-generated; show as non-editable info -->
         <div class="mb-3">
-            <label for="transaction_ref" class="form-label">Transaction Reference (optional)</label>
-            <input type="text" id="transaction_ref" name="transaction_ref"
-                   value="{{ old('transaction_ref') }}"
-                   class="form-control" placeholder="Reference / receipt number">
+            <label class="form-label">Transaction Reference</label>
+            <input type="text" class="form-control" value="System generated at save" disabled>
+            <div class="form-text">A unique transaction reference will be generated automatically when you save.</div>
         </div>
 
         <div class="mb-3">
