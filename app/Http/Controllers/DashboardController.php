@@ -105,7 +105,7 @@ class DashboardController extends Controller
         $recentNotifications = Notification::latest()->take(5)->get();
 
         $therapySessionCount = TherapySession::count();
-        $progressReportCount = ProgressReport::count();
+        $progressReportCount = PatientProgressReport::count();
         $dischargeCount = Discharge::count();
         $billingCount = BillingStatement::count();
 
@@ -208,7 +208,7 @@ class DashboardController extends Controller
 
         $patientCount = PatientDetail::count();
         $therapySessionCount = \App\Models\TherapySession::count();
-        $progressReportCount = ProgressReport::count();
+        $progressReportCount = PatientProgressReport::count();
         $dischargeCount = Discharge::count();
         $billingCount = BillingStatement::count();
        

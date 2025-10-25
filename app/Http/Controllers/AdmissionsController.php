@@ -146,7 +146,7 @@ class AdmissionsController extends Controller
                     "A member of the care team will contact you with further details. If you have questions, please call the facility.",
                     "",
                     "Warm regards,",
-                    "Hospital Admin Team",
+                    "Chimhanda Hospital Admissions Team",
                 ];
                 $body = implode("\n", $bodyLines);
 
