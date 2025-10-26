@@ -73,13 +73,17 @@
                     <td>{{ $d->dischargedBy->name ?? 'User #'.$d->discharged_by }}</td>
                     <td class="text-end">
                         <a class="btn btn-sm btn-outline-secondary" href="{{ route('discharges.show', $d) }}">View</a>
-                        <a class="btn btn-sm btn-outline-primary" href="{{ route('discharges.edit', $d) }}">Edit</a>
-                        <form class="d-inline" method="POST" action="{{ route('discharges.destroy', $d) }}" onsubmit="return confirm('Delete this discharge record?')">
-                            @csrf
-                            @method('DELETE')
-                            <button class="btn btn-sm btn-outline-danger">Delete</button>
-                        </form>
+                    
+                        @if(auth()->user()->role === 'psychiatrist')
+                            <a class="btn btn-sm btn-outline-primary" href="{{ route('discharges.edit', $d) }}">Edit</a>
+                            <form class="d-inline" method="POST" action="{{ route('discharges.destroy', $d) }}" onsubmit="return confirm('Delete this discharge record?')">
+                                @csrf
+                                @method('DELETE')
+                                <button class="btn btn-sm btn-outline-danger">Delete</button>
+                            </form>
+                        @endif
                     </td>
+                    
                 </tr>
             @empty
                 <tr><td colspan="7" class="text-center text-muted">No discharges found.</td></tr>
