@@ -6,9 +6,12 @@
         <h3 class="mb-0">Patient Evaluations</h3>
         <div class="text-muted">Review, filter, and manage evaluations</div>
     </div>
+    @if(auth()->user()->role === 'psychiatrist')
     <a href="{{ route('evaluations.create') }}" class="btn btn-primary">
         <i class="bi bi-clipboard-plus me-1"></i> New Evaluation
     </a>
+@endif
+
 </div>
 
 @if(session('success'))
