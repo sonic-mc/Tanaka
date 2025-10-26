@@ -112,7 +112,7 @@
                 </div>
                 <div class="d-flex align-items-end justify-content-between">
                     <div class="display-6 fw-bold">{{ isset($dischargesToday) ? $dischargesToday->count() : 0 }}</div>
-                    <a href="{{ route('admissions.index') }}?filter=discharged-today" class="btn btn-light btn-sm">View</a>
+                    <a href="{{ route('discharges.index', ['date_from' => now()->toDateString(), 'date_to' => now()->toDateString()]) }}" class="btn btn-light btn-sm">View</a>
                 </div>
             </div>
         </div>

@@ -126,7 +126,7 @@ Route::post('/dashboard/notifications/read-all', [DashboardNotificationControlle
 Route::post('patients/{patient}/assign-nurse', [PatientController::class, 'assignNurse'])->name('patients.assign-nurse');
 
 Route::get('patients/{patient}/admit', [PatientController::class, 'admit'])->name('patients.admit');
-Route::get('patients/{patient}/discharge', [PatientController::class, 'discharge'])->name('patients.discharge');
+
 
 Route::middleware(['auth', 'role:psychiatrist|nurse'])->group(function () {
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
@@ -186,6 +186,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 });
 
 Route::resource('care_levels', CareLevelController::class);
+
+ // Create/store discharge for a specific admission
+ Route::get('/admissions/{admission}/discharge', [DischargeController::class, 'create'])
+ ->name('admissions.discharge.create');
+
+Route::post('/admissions/{admission}/discharge', [DischargeController::class, 'store'])
+ ->name('admissions.discharge.store');
+
+// Manage discharges
+Route::resource('discharges', DischargeController::class)->except(['create', 'store']);
 
 
 Route::resource('consultation_fees', ConsultationFeeController::class);
