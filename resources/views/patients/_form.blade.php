@@ -82,14 +82,26 @@
     </div>
     <div class="col-md-3 mb-3">
         <label class="form-label">Race</label>
-        <input type="text" name="race" class="form-control"
-               value="{{ old('race', $patient->race ?? '') }}">
+        @php $race = old('race', $patient->race ?? ''); @endphp
+        <select name="race" class="form-select">
+            <option value="">-- Select --</option>
+            @foreach(['Black', 'White', 'Asian', 'Hispanic', 'Mixed', 'Other'] as $r)
+                <option value="{{ $r }}" {{ $race === $r ? 'selected' : '' }}>{{ $r }}</option>
+            @endforeach
+        </select>
     </div>
+    
     <div class="col-md-3 mb-3">
         <label class="form-label">Religion</label>
-        <input type="text" name="religion" class="form-control"
-               value="{{ old('religion', $patient->religion ?? '') }}">
+        @php $religion = old('religion', $patient->religion ?? ''); @endphp
+        <select name="religion" class="form-select">
+            <option value="">-- Select --</option>
+            @foreach(['Christianity', 'Islam', 'Hinduism', 'Buddhism', 'Judaism', 'Traditional', 'Other'] as $rel)
+                <option value="{{ $rel }}" {{ $religion === $rel ? 'selected' : '' }}>{{ $rel }}</option>
+            @endforeach
+        </select>
     </div>
+    
 </div>
 
 <div class="row">
@@ -100,9 +112,15 @@
     </div>
     <div class="col-md-3 mb-3">
         <label class="form-label">Denomination</label>
-        <input type="text" name="denomination" class="form-control"
-               value="{{ old('denomination', $patient->denomination ?? '') }}">
+        @php $denom = old('denomination', $patient->denomination ?? ''); @endphp
+        <select name="denomination" class="form-select">
+            <option value="">-- Select --</option>
+            @foreach(['Catholic', 'Protestant', 'Orthodox', 'Evangelical', 'Pentecostal', 'Other'] as $d)
+                <option value="{{ $d }}" {{ $denom === $d ? 'selected' : '' }}>{{ $d }}</option>
+            @endforeach
+        </select>
     </div>
+    
     <div class="col-md-3 mb-3">
         <label class="form-label">Marital Status</label>
         <input type="text" name="marital_status" class="form-control"
@@ -116,11 +134,17 @@
 </div>
 
 <div class="row">
-    <div class="col-md-2 mb-3">
+    <div class="col-md-3 mb-3">
         <label class="form-label">Blood Group</label>
-        <input type="text" name="blood_group" class="form-control"
-               value="{{ old('blood_group', $patient->blood_group ?? '') }}">
+        @php $bg = old('blood_group', $patient->blood_group ?? ''); @endphp
+        <select name="blood_group" class="form-select">
+            <option value="">-- Select --</option>
+            @foreach(['O+', 'A+', 'B+', 'AB+', 'O−', 'A−', 'B−', 'AB−'] as $group)
+                <option value="{{ $group }}" {{ $bg === $group ? 'selected' : '' }}>{{ $group }}</option>
+            @endforeach
+        </select>
     </div>
+    
     <div class="col-md-3 mb-3">
         <label class="form-label">Allergies</label>
         <input type="text" name="allergies" class="form-control"
@@ -149,11 +173,7 @@
         <input type="text" name="medical_aid_number" class="form-control"
                value="{{ old('medical_aid_number', $patient->medical_aid_number ?? '') }}">
     </div>
-    <div class="col-md-4 mb-3">
-        <label class="form-label">Blood Group</label>
-        <input type="text" name="blood_group" class="form-control"
-               value="{{ old('blood_group', $patient->blood_group ?? '') }}">
-    </div>
+  
 </div>
 
 <div class="mb-3">
