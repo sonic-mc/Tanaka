@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class IncidentReport extends Model
 {
+
+    protected $table = 'incidents_reports';
+    
     protected $fillable = [
         'patient_id', 'reported_by', 'incident_date', 'description'
     ];

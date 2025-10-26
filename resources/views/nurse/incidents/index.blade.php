@@ -54,13 +54,13 @@
         <div class="tab-pane fade" id="view">
             <form method="GET" action="{{ route('incidents.index') }}" class="row g-3 mb-3">
                 <div class="col-md-3">
-                    <input type="text" name="search_patient" class="form-control" placeholder="Search by patient name">
+                    <input type="text" name="search_patient" class="form-control" placeholder="Search by patient name" value="{{ request('search_patient') }}">
                 </div>
                 <div class="col-md-3">
-                    <input type="text" name="search_reporter" class="form-control" placeholder="Search by reporter name">
+                    <input type="text" name="search_reporter" class="form-control" placeholder="Search by reporter name" value="{{ request('search_reporter') }}">
                 </div>
                 <div class="col-md-3">
-                    <input type="date" name="search_date" class="form-control" placeholder="Date">
+                    <input type="date" name="search_date" class="form-control" placeholder="Date" value="{{ request('search_date') }}">
                 </div>
                 <div class="col-md-3 text-end">
                     <button type="submit" class="btn btn-outline-primary">Filter</button>
@@ -80,10 +80,10 @@
                     <tbody>
                         @forelse($reports as $report)
                             <tr>
-                                <td>{{ $report->incident_date }}</td>
+                                <td>{{ \Illuminate\Support\Carbon::parse($report->incident_date)->toDateString() }}</td>
                                 <td>{{ $report->patient->first_name }} {{ $report->patient->last_name }}</td>
-                                <td>{{ $report->reporter->name }}</td>
-                                <td>{{ Str::limit($report->description, 80) }}</td>
+                                <td>{{ $report->reportedBy->name }}</td>
+                                <td>{{ \Illuminate\Support\Str::limit($report->description, 80) }}</td>
                             </tr>
                         @empty
                             <tr><td colspan="4" class="text-muted text-center">No incidents found.</td></tr>
@@ -91,6 +91,12 @@
                     </tbody>
                 </table>
             </div>
+
+            @if(method_exists($reports, 'links'))
+                <div class="mt-3">
+                    {{ $reports->withQueryString()->links() }}
+                </div>
+            @endif
         </div>
 
         <!-- Incident Analytics -->
@@ -115,14 +121,34 @@
             </div>
         </div>
 
+        @php
+            // Convert incident periods (YYYY-MM) to "Mon YYYY" labels when possible
+            $incidentPeriodLabels = $incidentStats->keys()->map(function ($p) {
+                try {
+                    return \Carbon\Carbon::createFromFormat('Y-m', $p)->format('M Y');
+                } catch (\Exception $e) {
+                    return $p; // fallback to raw key
+                }
+            })->values();
+
+            // Build recurrence labels from patient names
+            $recurrenceLabels = $recurrenceStats->map(function ($r) {
+                $first = optional($r->patient)->first_name;
+                $last  = optional($r->patient)->last_name;
+                return trim(($first ?? '') . ' ' . ($last ?? '')) ?: 'Unknown Patient';
+            })->values();
+
+            $recurrenceData = $recurrenceStats->pluck('count')->values();
+            $incidentsByMonthData = $incidentStats->values()->values();
+        @endphp
+
         <script>
-            const incidentsByMonthLabels = {!! json_encode($incidentStats->keys()->map(fn($m) => date('F', mktime(0, 0, 0, $m, 1))) ) !!};
-            const incidentsByMonthData = {!! json_encode($incidentStats->values()) !!};
-        
-            const recurrenceLabels = {!! json_encode($recurrenceStats->pluck('patient.full_name')) !!};
-            const recurrenceData = {!! json_encode($recurrenceStats->pluck('count')) !!};
+            const incidentsByMonthLabels = {!! $incidentPeriodLabels->toJson() !!};
+            const incidentsByMonthData = {!! $incidentsByMonthData->toJson() !!};
+
+            const recurrenceLabels = {!! $recurrenceLabels->toJson() !!};
+            const recurrenceData = {!! $recurrenceData->toJson() !!};
         </script>
-        
 
         <!-- Staff Insights -->
         {{-- <div class="tab-pane fade" id="staff">
@@ -133,7 +159,7 @@
                         @foreach($staffStats as $user)
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 {{ $user->name }} ({{ $user->role }})
-                                <span class="badge bg-primary rounded-pill">{{ $user->incident_count }}</span>
+                                <span class="badge bg-primary rounded-pill">{{ $user->incident_reports_count }}</span>
                             </li>
                         @endforeach
                     </ul>
