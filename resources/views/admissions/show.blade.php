@@ -8,9 +8,12 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Admission Details</h5>
             <div>
-                <a href="{{ route('admissions.edit', $admission) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                @if(auth()->user()->role === 'psychiatrist')
+                    <a href="{{ route('admissions.edit', $admission) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                @endif
                 <a href="{{ route('admissions.index') }}" class="btn btn-sm btn-outline-secondary">Back</a>
             </div>
+            
         </div>
 
         <div class="card-body">
