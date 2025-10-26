@@ -130,7 +130,20 @@
                 <ul class="dropdown-menu dropdown-menu-end">
                     <li><a class="dropdown-item" href="{{ route('profile.show') }}"><i class="bi bi-person-fill me-2"></i> Profile</a></li>
                     <li><a class="dropdown-item" href="{{ route('admin.roles-permissions') }}"><i class="bi bi-gear-fill me-2"></i> Settings</a></li>
-                    <li><a class="dropdown-item" href="#"><i class="bi bi-question-circle-fill me-2"></i> Help</a></li>
+                    <li>
+                        <a class="dropdown-item" href="{{ route('feedback.create') }}">
+                          <i class="bi bi-question-circle-fill me-2"></i>Feedback
+                        </a>
+                      </li>
+                      @auth
+                        @if(auth()->user()->role === 'admin')
+                          <li>
+                            <a class="dropdown-item" href="{{ route('feedback.index') }}">
+                              <i class="bi bi-list-ul me-2"></i>View Feedback
+                            </a>
+                          </li>
+                        @endif
+                      @endauth
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <form method="POST" action="{{ route('logout') }}">

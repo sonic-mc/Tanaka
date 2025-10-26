@@ -28,6 +28,7 @@ use App\Http\Controllers\PatientEvaluationController;
 use App\Http\Controllers\NurseAssignmentController;
 use App\Http\Controllers\ConsultationFeeController;
 use App\Http\Controllers\GradingController;
+use App\Http\Controllers\FeedbackController;
 
 
 
@@ -196,6 +197,15 @@ Route::post('/admissions/{admission}/discharge', [DischargeController::class, 's
 
 // Manage discharges
 Route::resource('discharges', DischargeController::class)->except(['create', 'store']);
+
+
+Route::middleware('auth')->group(function () {
+    Route::get('/feedback/create', [FeedbackController::class, 'create'])->name('feedback.create');
+    Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.store');
+
+    // Admin listing — guarded inside controller by role check
+    Route::get('/feedback', [FeedbackController::class, 'index'])->name('feedback.index');
+});
 
 
 Route::resource('consultation_fees', ConsultationFeeController::class);
