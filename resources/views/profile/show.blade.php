@@ -29,8 +29,8 @@
                 <dt class="col-sm-3"><i class="bi bi-envelope-fill me-2 text-primary"></i> Email Address</dt>
                 <dd class="col-sm-9">{{ $user->email }}</dd>
 
-                <dt class="col-sm-3"><i class="bi bi-telephone-fill me-2 text-primary"></i> Phone Number</dt>
-                <dd class="col-sm-9">{{ $user->phone ?? '—' }}</dd>
+                {{-- <dt class="col-sm-3"><i class="bi bi-telephone-fill me-2 text-primary"></i> Phone Number</dt>
+                <dd class="col-sm-9">{{ $user->phone ?? '—' }}</dd> --}}
 
                 <dt class="col-sm-3"><i class="bi bi-person-badge-fill me-2 text-primary"></i> Role</dt>
                 <dd class="col-sm-9 text-capitalize">{{ $user->role ?? '—' }}</dd>
