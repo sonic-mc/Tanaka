@@ -20,7 +20,7 @@ use App\Models\Invoice;
 use App\Models\InvoicePayment;
 use App\Models\Notification;
 use App\Models\BillingStatement;
-use App\Models\Discharge;
+use App\Models\DischargedPatient;
 use App\Traits\AuditLogger;
 use Carbon\Carbon;
 use App\Models\AuditLog;
@@ -106,7 +106,7 @@ class DashboardController extends Controller
 
         $therapySessionCount = TherapySession::count();
         $progressReportCount = PatientProgressReport::count();
-        $dischargeCount = Discharge::count();
+        $dischargeCount = DischargedPatient::count();
         $billingCount = BillingStatement::count();
 
 
@@ -209,7 +209,7 @@ class DashboardController extends Controller
         $patientCount = PatientDetail::count();
         $therapySessionCount = \App\Models\TherapySession::count();
         $progressReportCount = PatientProgressReport::count();
-        $dischargeCount = Discharge::count();
+        $dischargeCount = DischargedPatient::count();
         $billingCount = BillingStatement::count();
        
 
