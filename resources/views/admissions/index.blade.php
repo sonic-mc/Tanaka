@@ -49,12 +49,17 @@
                                 <td>{{ optional($ad->admittedBy)->name ?? '—' }}</td>
                                 <td>
                                     <a href="{{ route('admissions.show', $ad) }}" class="btn btn-sm btn-outline-info">View</a>
-                                    <a href="{{ route('admissions.edit', $ad) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                                    <form action="{{ route('admissions.destroy', $ad) }}" method="POST" class="d-inline ms-1" onsubmit="return confirm('Delete this admission?')">
-                                        @csrf @method('DELETE')
-                                        <button class="btn btn-sm btn-outline-danger">Delete</button>
-                                    </form>
+                                
+                                    @if(auth()->user()->role === 'psychiatrist')
+                                        <a href="{{ route('admissions.edit', $ad) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                        <form action="{{ route('admissions.destroy', $ad) }}" method="POST" class="d-inline ms-1" onsubmit="return confirm('Delete this admission?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                        </form>
+                                    @endif
                                 </td>
+                                
                             </tr>
                         @empty
                             <tr><td colspan="8" class="text-center py-3">No admissions found.</td></tr>
