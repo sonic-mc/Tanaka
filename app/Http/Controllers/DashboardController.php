@@ -30,7 +30,7 @@ class DashboardController extends Controller
 {
     use AuditLogger;
 
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
 
@@ -49,7 +49,7 @@ class DashboardController extends Controller
             case 'admin':
                 return $this->adminDashboard();
             case 'psychiatrist':
-                return $this->psychiatristDashboard();
+                return $this->psychiatristDashboard($request);
             case 'nurse':
                 return $this->nurseDashboard();
             case 'clinician':
@@ -201,10 +201,10 @@ class DashboardController extends Controller
     }
 
 
-    protected function psychiatristDashboard()
+    public function psychiatristDashboard(Request $request)
     {
         $user = Auth::user();
-        $notificationService = app(\App\Services\DashboardNotificationService::class);
+       
 
         $patientCount = PatientDetail::count();
         $therapySessionCount = \App\Models\TherapySession::count();
@@ -212,10 +212,6 @@ class DashboardController extends Controller
         $dischargeCount = DischargedPatient::count();
         $billingCount = BillingStatement::count();
        
-
-        $notificationCount = $user->unreadNotifications()->count();
-        $notifications = $notificationService->getForUser($user, 10);
-
         $incidentsCount = IncidentReport::count();
         $evaluationCount = PatientEvaluation::count();
         $admissionsCount = Admission::count();
@@ -227,6 +223,29 @@ class DashboardController extends Controller
         // Count patients who haven't been evaluated
         $unevaluatedCount = PatientDetail::whereNotIn('id', $evaluatedPatientIds)->count();
 
+         // Define how "newly registered" is determined (e.g., last 7 days)
+         $windowDays = (int) ($request->get('new_patients_days', 7));
+         $windowStart = now()->subDays($windowDays);
+         
+         // Recently registered but *not yet evaluated* patients
+         $newPatients = PatientDetail::query()
+             ->where('created_at', '>=', $windowStart)
+             ->whereDoesntHave('evaluations')  // no evaluations yet
+             ->orderByDesc('created_at')
+             ->limit(10)
+             ->get();
+         
+         // Total count of unevaluated patients (you can also filter by window if preferred)
+         $totalUnevaluatedCount = PatientDetail::whereDoesntHave('evaluations')->count();
+         
+         $notifications = [
+             'new_patients' => $newPatients,
+             'pending_unevaluated_count' => $totalUnevaluatedCount,
+             'window_days' => $windowDays,
+         ];
+         
+ 
+
         return view('psychiatrist.dashboard', compact(
             'patientCount',
             'therapySessionCount',
@@ -237,9 +256,9 @@ class DashboardController extends Controller
             'incidentsCount',
             'evaluationCount',
             'admissionsCount',
-            'notificationCount',
             'notifications',
             'progressDistribution'
+
         ));
     }
 

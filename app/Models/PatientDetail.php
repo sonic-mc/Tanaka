@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
 
 class PatientDetail extends Model
 {
@@ -73,5 +75,10 @@ class PatientDetail extends Model
     public function getFullNameAttribute(): string
     {
         return trim($this->first_name . ' ' . ($this->middle_name ? $this->middle_name . ' ' : '') . $this->last_name);
+    }
+
+    public function evaluations(): HasMany
+    {
+        return $this->hasMany(PatientEvaluation::class, 'patient_id');
     }
 }
