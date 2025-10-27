@@ -6,7 +6,6 @@
 @php
     use App\Models\Invoice;
 
-    // Ensure we have a Collection of invoices even if the relationship wasn't eager loaded or not defined.
     try {
         if (isset($patient) && isset($patient->invoices) && $patient->invoices instanceof \Illuminate\Support\Collection) {
             $invoices = $patient->invoices;
@@ -16,8 +15,19 @@
             $invoices = Invoice::where('patient_id', $patient->id ?? 0)->get();
         }
     } catch (\Throwable $e) {
-        // Fallback: query directly to avoid view error
         $invoices = Invoice::where('patient_id', $patient->id ?? 0)->get();
+    }
+
+    // Normalize gender and build a robust fallback chain for the avatar
+    $g = strtolower($patient->gender ?? '');
+    $avatarPath = match ($g) {
+        'female' => 'images/avatars/female.svg',
+        'male' => 'images/avatars/male.svg',
+        default => 'images/avatars/other.svg',
+    };
+    // Server-side fallback if target file is missing (prevents broken src)
+    if (!file_exists(public_path($avatarPath))) {
+        $avatarPath = 'images/avatars/male.svg';
     }
 @endphp
 
@@ -41,11 +51,14 @@
 <div class="card mb-3">
     <div class="card-body d-flex">
         <div class="me-3">
-            @if(!empty($patient->photo))
-                <img src="{{ asset('storage/' . $patient->photo) }}" alt="Photo" width="120" height="120" class="rounded object-fit-cover">
-            @else
-                <div class="bg-secondary rounded d-inline-block" style="width:120px;height:120px;"></div>
-            @endif
+            <img
+                src="{{ asset($avatarPath) }}"
+                alt="Avatar"
+                width="120"
+                height="120"
+                class="rounded object-fit-cover"
+                onerror="this.onerror=null;this.src='{{ asset('images/avatars/male.svg') }}';"
+            >
         </div>
         <div>
             <p class="mb-1"><strong>Status:</strong> {{ $patient->deleted_at ? 'Archived' : 'Active' }}</p>
@@ -124,14 +137,12 @@
     </div>
 </div>
 
-{{-- New invoice CTA: if a new invoice was created during the last redirect, show a prominent download button --}}
 @php
     $sessionNewInvoiceId = session('new_invoice_id');
 @endphp
 
 @if($sessionNewInvoiceId)
     @php
-        // Try to resolve the invoice from the $invoices collection first, fallback to a DB lookup.
         $newInvoice = $invoices->firstWhere('id', $sessionNewInvoiceId) ?? Invoice::find($sessionNewInvoiceId);
     @endphp
 
@@ -207,14 +218,11 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // If the controller set new_invoice_id in session we can optionally trigger the download automatically.
-    // This is a best-effort attempt; browsers may block popups, so a visible button is provided above.
     @if(session()->has('new_invoice_id'))
         (function() {
             var invoiceId = @json(session('new_invoice_id'));
             if (!invoiceId) return;
 
-            // Build a URL template server-side; replace placeholder client-side with the actual id.
             var urlTemplate = "{{ route('invoices.download', ['invoice' => '__ID__']) }}";
             var downloadUrl = urlTemplate.replace('__ID__', encodeURIComponent(invoiceId));
 

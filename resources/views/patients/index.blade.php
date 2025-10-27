@@ -5,8 +5,7 @@
     <h3>Registered Patients</h3>
     @if(Auth::user() && Auth::user()->role === 'clinician')
     <a href="{{ route('patients.create') }}" class="btn btn-primary">Register New Patient</a>
-@endif
-
+    @endif
 </div>
 
 @if(session('success'))
@@ -15,8 +14,7 @@
 
 <form method="GET" action="{{ route('patients.index') }}" class="row g-2 mb-3">
     <div class="col-md-6">
-        <input type="text" name="q" class="form-control" placeholder="Search by code, name, ID, passport, email, contact..."
-               value="{{ request('q') }}">
+        <input type="text" name="q" class="form-control" placeholder="Search by code, name, ID, passport, email, contact..." value="{{ request('q') }}">
     </div>
     <div class="col-md-3">
         <select name="status" class="form-select">
@@ -33,7 +31,7 @@
 <table class="table table-bordered align-middle">
     <thead>
         <tr>
-            <th>Photo</th>
+            <th>Avatar</th>
             <th>Code</th>
             <th>Name</th>
             <th>Gender</th>
@@ -45,13 +43,14 @@
     </thead>
     <tbody>
     @forelse($patients as $patient)
+        @php
+            $avatarPath = $patient->gender === 'female'
+                ? 'images/avatars/female.svg'
+                : ($patient->gender === 'male' ? 'images/avatars/male.svg' : 'images/avatars/other.svg');
+        @endphp
         <tr @if($patient->deleted_at) class="table-warning" @endif>
             <td>
-                @if($patient->photo)
-                    <img src="{{ asset('storage/'.$patient->photo) }}" alt="Photo" width="48" height="48" class="rounded-circle object-fit-cover">
-                @else
-                    <div class="bg-secondary rounded-circle d-inline-block" style="width:48px;height:48px;"></div>
-                @endif
+                <img src="{{ asset($avatarPath) }}" alt="Avatar" width="48" height="48" class="rounded-circle object-fit-cover">
             </td>
             <td>{{ $patient->patient_code }}</td>
             <td>{{ $patient->first_name }} {{ $patient->last_name }}</td>
@@ -88,4 +87,3 @@
 
 {{ $patients->links() }}
 @endsection
-
