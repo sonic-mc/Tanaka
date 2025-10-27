@@ -217,11 +217,31 @@
         {{-- Psychiatrist Exclusive --}}
         @if(auth()->user()->hasRole('psychiatrist'))
             <li class="nav-item mt-3 text-white fw-bold">Psychiatrist</li>
-            <li class="nav-item">
-                <a href="{{ route('evaluations.index') }}" class="nav-link {{ request()->routeIs('evaluations.*') ? 'active' : '' }}">
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle {{ request()->routeIs('evaluations.*') ? 'active' : '' }}" 
+                   href="#" id="evaluationsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-journal-medical me-2"></i> Patient Evaluations
                 </a>
+            
+                <ul class="dropdown-menu" aria-labelledby="evaluationsDropdown">
+                    <li>
+                        <a href="{{ route('evaluations.index') }}" class="dropdown-item">
+                            <i class="bi bi-list-ul me-2"></i> All Evaluations
+                        </a>
+                    </li>
+            
+                    @auth
+                        @if(auth()->user()->hasRole('psychiatrist'))
+                            <li>
+                                <a href="{{ route('evaluations.create') }}" class="dropdown-item">
+                                    <i class="bi bi-clipboard-plus me-2"></i> New Evaluation
+                                </a>
+                            </li>
+                        @endif
+                    @endauth
+                </ul>
             </li>
+            
             <li class="nav-item">
                 <a href="{{ route('grading.index') }}" 
                    class="nav-link {{ request()->routeIs('grading.*') ? 'active' : '' }}">
