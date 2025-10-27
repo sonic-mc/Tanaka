@@ -181,7 +181,8 @@
 
 <!-- Notifications & Decision Support -->
 <div class="row mb-5">
-    @include('dashboard.partials.notifications', ['notifications' => $notifications, 'allowMarkAll' => true])
+    @include('dashboard.partials.notifications', ['notifications' => $notifications])
+
 
     <div class="col-lg-6 mb-4">
         <div class="card modern-card chart-card">
