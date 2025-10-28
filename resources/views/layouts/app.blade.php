@@ -230,15 +230,12 @@
                         </a>
                     </li>
             
-                    @auth
-                        @if(auth()->user()->hasRole('psychiatrist'))
+                  
                             <li>
                                 <a href="{{ route('evaluations.create') }}" class="dropdown-item">
                                     <i class="bi bi-clipboard-plus me-2"></i> New Evaluation
                                 </a>
                             </li>
-                        @endif
-                    @endauth
                 </ul>
             </li>
             

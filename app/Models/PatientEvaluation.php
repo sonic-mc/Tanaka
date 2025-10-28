@@ -10,26 +10,28 @@ class PatientEvaluation extends Model
 {
     use SoftDeletes, AutoGradesEvaluation;
 
-    protected $fillable = [
-        'patient_id',
-        'psychiatrist_id',
-        'evaluation_date',
-        'evaluation_type',
-        'presenting_complaints',
-        'clinical_observations',
-        'diagnosis',
-        'recommendations',
-        'decision',
-        'requires_admission',
-        'admission_trigger_notes',
-        'decision_made_at',
-        'created_by',
-        'last_modified_by',
-        // Grading fields
-        'severity_level',
-        'risk_level',
-        'priority_score',
-    ];
+    protected $guarded = [];
+
+    // protected $fillable = [
+    //     'patient_id',
+    //     'psychiatrist_id',
+    //     'evaluation_date',
+    //     'evaluation_type',
+    //     'presenting_complaints',
+    //     'clinical_observations',
+    //     'diagnosis',
+    //     'recommendations',
+    //     'decision',
+    //     'requires_admission',
+    //     'admission_trigger_notes',
+    //     'decision_made_at',
+    //     'created_by',
+    //     'last_modified_by',
+    //     // Grading fields
+    //     'severity_level',
+    //     'risk_level',
+    //     'priority_score',
+    // ];
 
     protected $casts = [
         'evaluation_date' => 'date',

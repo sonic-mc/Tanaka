@@ -26,15 +26,21 @@ return new class extends Migration
             $table->text('diagnosis')->nullable();
             $table->text('recommendations')->nullable();
 
+            // Severity & Risk
+            $table->enum('severity_level', ['mild', 'moderate', 'severe', 'critical'])->default('mild');
+            $table->enum('risk_level', ['low', 'medium', 'high'])->default('low');
+            $table->unsignedTinyInteger('priority_score')->nullable()->comment('1–10 scale for urgency');
+
             // Decision logic
             $table->enum('decision', ['admit', 'outpatient', 'refer', 'monitor'])->default('outpatient');
             $table->boolean('requires_admission')->default(false);
-            $table->text('admission_trigger_notes')->nullable(); // Why admission was recommended
-            $table->timestamp('decision_made_at')->nullable(); // When decision was finalized
+            $table->text('admission_trigger_notes')->nullable();
+            $table->timestamp('decision_made_at')->nullable();
 
             // Administrative
-            $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
+            $table->unsignedBigInteger('created_by')->nullable();
             $table->foreignId('last_modified_by')->nullable()->constrained('users')->nullOnDelete();
+
             $table->timestamps();
             $table->softDeletes();
         });

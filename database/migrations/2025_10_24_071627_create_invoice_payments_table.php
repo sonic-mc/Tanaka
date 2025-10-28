@@ -12,7 +12,7 @@ return new class extends Migration {
 
             // Relationships
             $table->foreignId('invoice_id')->constrained('invoicess')->onDelete('cascade');
-            $table->foreignId('patient_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('patient_id')->nullable()->constrained('patient_details')->onDelete('set null');
             $table->foreignId('received_by')->nullable()->constrained('users')->onDelete('set null');
 
             // Payment details

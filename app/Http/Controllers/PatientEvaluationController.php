@@ -72,11 +72,32 @@ class PatientEvaluationController extends Controller
     public function store(StorePatientEvaluationRequest $request)
     {
         $userId = Auth::id();
+      
 
         $createdEvaluation = null;
         $createdAdmission = null;
 
         DB::transaction(function () use ($request, $userId, &$createdEvaluation, &$createdAdmission) {
+        //    dd([
+        //     'patient_id' => $request->patient_id,
+        //     'psychiatrist_id' => $userId,
+        //     'evaluation_date' => $request->evaluation_date,
+        //     'evaluation_type' => $request->evaluation_type,
+        //     'presenting_complaints' => $request->presenting_complaints,
+        //     'clinical_observations' => $request->clinical_observations,
+        //     'diagnosis' => $request->diagnosis,
+        //     'recommendations' => $request->recommendations,
+        //     'decision' => $request->decision,
+        //     'requires_admission' => (bool) $request->requires_admission,
+        //     'admission_trigger_notes' => $request->admission_trigger_notes,
+        //     'decision_made_at' => now(),
+        //     // New grading fields (with safe defaults)
+        //     'severity_level' => $this->sanitizeSeverity($request->input('severity_level', 'mild')),
+        //     'risk_level' => $this->sanitizeRisk($request->input('risk_level', 'low')),
+        //     'priority_score' => $this->sanitizePriority($request->input('priority_score')),
+        //     'created_by' => $userId,
+        //    ]);
+        try {
             $evaluation = PatientEvaluation::create([
                 'patient_id' => $request->patient_id,
                 'psychiatrist_id' => $userId,
@@ -90,15 +111,19 @@ class PatientEvaluationController extends Controller
                 'requires_admission' => (bool) $request->requires_admission,
                 'admission_trigger_notes' => $request->admission_trigger_notes,
                 'decision_made_at' => now(),
-                // New grading fields (with safe defaults)
                 'severity_level' => $this->sanitizeSeverity($request->input('severity_level', 'mild')),
                 'risk_level' => $this->sanitizeRisk($request->input('risk_level', 'low')),
                 'priority_score' => $this->sanitizePriority($request->input('priority_score')),
                 'created_by' => $userId,
             ]);
 
+        } catch (\Exception $e) {
+            dd($e->getMessage());
+        }
+
             $createdEvaluation = $evaluation;
 
+dd($evaluation);
             // Admission logic: create only if required and no active admission exists
             if ($evaluation->requires_admission) {
                 $hasActiveAdmission = Admission::where('patient_id', $evaluation->patient_id)
@@ -393,6 +418,7 @@ class PatientEvaluationController extends Controller
     {
         $allowed = ['mild', 'moderate', 'severe', 'critical'];
         $val = strtolower((string) $val);
+      
         return in_array($val, $allowed, true) ? $val : 'mild';
     }
 
@@ -400,6 +426,7 @@ class PatientEvaluationController extends Controller
     {
         $allowed = ['low', 'medium', 'high'];
         $val = strtolower((string) $val);
+       
         return in_array($val, $allowed, true) ? $val : 'low';
     }
 
@@ -411,6 +438,7 @@ class PatientEvaluationController extends Controller
         $n = (int) $val;
         if ($n < 1) $n = 1;
         if ($n > 10) $n = 10;
+     
         return $n;
     }
 }

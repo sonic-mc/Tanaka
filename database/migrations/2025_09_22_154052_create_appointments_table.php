@@ -15,7 +15,7 @@ return new class extends Migration
         $table->id();
     
         // Relationships
-        $table->foreignId('patient_id')->constrained()->onDelete('cascade');
+        $table->foreignId('patient_id')->constrained('patient_details')->onDelete('cascade');
         $table->foreignId('staff_id')->constrained('users')->onDelete('cascade'); // psychiatrist/nurse/doctor
         $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null'); // admin/receptionist
         

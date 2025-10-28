@@ -5,7 +5,6 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\CareLevelController;
 use App\Http\Controllers\PatientController;
-use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\ProgressReportController;
 use App\Http\Controllers\DischargeController;
 use App\Http\Controllers\TaskController;

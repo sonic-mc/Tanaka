@@ -17,8 +17,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             CareLevelSeeder::class,
             UserRoleSeeder::class,   // make sure users exist
-            PatientSeeder::class,
-            EvaluationSeeder::class,
+            PatientDetailSeeder::class,
+          
         ]);
     }
 
