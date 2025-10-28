@@ -91,7 +91,7 @@
                 <p class="mb-1"><strong>Race:</strong> {{ $patient->race }}</p>
                 <p class="mb-1"><strong>Religion:</strong> {{ $patient->religion }}</p>
                 <p class="mb-1"><strong>Language:</strong> {{ $patient->language }}</p>
-                <p class="mb-1"><strong>Denomination:</strong> {{ $patient->denomination }}</p>
+                {{-- <p class="mb-1"><strong>Denomination:</strong> {{ $patient->denomination }}</p> --}}
                 <p class="mb-1"><strong>Marital Status:</strong> {{ $patient->marital_status }}</p>
                 <p class="mb-1"><strong>Occupation:</strong> {{ $patient->occupation }}</p>
             </div>
@@ -113,7 +113,7 @@
         <div class="card mb-3">
             <div class="card-header">Medical Information</div>
             <div class="card-body">
-                <p class="mb-1"><strong>Blood Group:</strong> {{ $patient->blood_group }}</p>
+                {{-- <p class="mb-1"><strong>Blood Group:</strong> {{ $patient->blood_group }}</p> --}}
                 <p class="mb-1"><strong>Allergies:</strong> {{ $patient->allergies }}</p>
                 <p class="mb-1"><strong>Disabilities:</strong> {{ $patient->disabilities }}</p>
                 <p class="mb-1"><strong>Special Diet:</strong> {{ $patient->special_diet }}</p>

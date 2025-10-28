@@ -132,7 +132,7 @@
                value="{{ old('language', $patient->language ?? '') }}" maxlength="100" autocomplete="language">
         @error('language')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
-    <div class="col-md-3 mb-3">
+    {{-- <div class="col-md-3 mb-3">
         <label class="form-label">Denomination</label>
         @php $denom = old('denomination', $patient->denomination ?? ''); @endphp
         <select name="denomination" class="form-select @error('denomination') is-invalid @enderror">
@@ -142,7 +142,7 @@
             @endforeach
         </select>
         @error('denomination')<div class="invalid-feedback">{{ $message }}</div>@enderror
-    </div>
+    </div> --}}
     
     <div class="col-md-3 mb-3">
         <label class="form-label">Marital Status</label>
@@ -159,7 +159,7 @@
 </div>
 
 <div class="row">
-    <div class="col-md-3 mb-3">
+    {{-- <div class="col-md-3 mb-3">
         <label class="form-label">Blood Group</label>
         @php $bg = old('blood_group', $patient->blood_group ?? ''); @endphp
         <select name="blood_group" class="form-select @error('blood_group') is-invalid @enderror">
@@ -169,7 +169,7 @@
             @endforeach
         </select>
         @error('blood_group')<div class="invalid-feedback">{{ $message }}</div>@enderror
-    </div>
+    </div> --}}
     
     <div class="col-md-3 mb-3">
         <label class="form-label">Allergies</label>
