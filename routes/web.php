@@ -133,9 +133,15 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/users/{id}/assign-role', [UsersController::class, 'assignRole'])->name('users.assignRole');
 });
 
-Route::resource('evaluations', PatientEvaluationController::class);
-Route::post('evaluations/{id}/restore', [PatientEvaluationController::class, 'restore'])->name('evaluations.restore');
-Route::delete('evaluations/{id}/force-delete', [PatientEvaluationController::class, 'forceDelete'])->name('evaluations.force-delete');
+
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::get('/patient-evaluations', [PatientEvaluationController::class, 'index'])->name('evaluations.index');
+    Route::get('/patient-evaluations/create', [PatientEvaluationController::class, 'create'])->name('evaluations.create');
+    Route::post('/patient-evaluations', [PatientEvaluationController::class, 'store'])->name('evaluations.store');
+    Route::get('/patient-evaluations/{id}', [PatientEvaluationController::class, 'show'])->name('evaluations.show');
+    Route::get('/patient-evaluations/{id}/edit', [PatientEvaluationController::class, 'edit'])->name('evaluations.edit');
+});
+
 
 // Patient lookup endpoint (AJAX for evaluation form)
 Route::get('patients/lookup', [PatientController::class, 'lookup'])->name('patients.lookup');

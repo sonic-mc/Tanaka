@@ -219,7 +219,7 @@
 
             <li class="nav-item mt-3 text-white fw-bold">Psychiatrist</li>
             <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle {{ request()->routeIs('evaluations.*') ? 'active' : '' }}" 
+                <a class="nav-link dropdown-toggle {{ request()->routeIs('patient-evaluations.*') ? 'active' : '' }}" 
                    href="#" id="evaluationsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-journal-medical me-2"></i> Patient Evaluations
                 </a>
@@ -230,15 +230,14 @@
                             <i class="bi bi-list-ul me-2"></i> All Evaluations
                         </a>
                     </li>
-            
-                  
-                            <li>
-                                <a href="{{ route('evaluations.create') }}" class="dropdown-item">
-                                    <i class="bi bi-clipboard-plus me-2"></i> New Evaluation
-                                </a>
-                            </li>
+                    <li>
+                        <a href="{{ route('evaluations.create') }}" class="dropdown-item">
+                            <i class="bi bi-clipboard-plus me-2"></i> New Evaluation
+                        </a>
+                    </li>
                 </ul>
             </li>
+            
             
             <li class="nav-item">
                 <a href="{{ route('grading.index') }}" 

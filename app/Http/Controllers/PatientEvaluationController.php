@@ -2,422 +2,197 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StorePatientEvaluationRequest;
-use App\Http\Requests\UpdatePatientEvaluationRequest;
-use App\Models\Admission;
 use App\Models\PatientDetail;
 use App\Models\PatientEvaluation;
-use App\Services\EmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class PatientEvaluationController extends Controller
 {
-    protected EmailService $emailService;
+    private const EVALUATION_TYPES = ['initial', 'follow-up', 'emergency'];
+    private const SEVERITY_LEVELS = ['mild', 'moderate', 'severe', 'critical'];
+    private const RISK_LEVELS = ['low', 'medium', 'high'];
+    private const DECISIONS = ['admit', 'outpatient', 'refer', 'monitor'];
 
-    public function __construct(EmailService $emailService)
-    {
-        $this->emailService = $emailService;
-    }
-
-    // List evaluations with filters, search, soft-delete status
     public function index(Request $request)
     {
-        $status = $request->get('status', 'active'); // active|trashed|all
+        $query = PatientEvaluation::with(['patient', 'psychiatrist'])->latest();
 
-        $query = PatientEvaluation::query()
-            ->with(['patient', 'psychiatrist']);
-
-        if ($status === 'trashed') {
-            $query->onlyTrashed();
-        } elseif ($status === 'all') {
-            $query->withTrashed();
+        if ($request->filled('patient_id')) {
+            $query->where('patient_id', $request->integer('patient_id'));
         }
 
-        $evaluations = $query
-            ->ofType($request->get('type'))
-            ->ofDecision($request->get('decision'))
-            ->dateBetween($request->get('from'), $request->get('to'))
-            ->search($request->get('q'))
-            ->latest('evaluation_date')
-            ->paginate(20)
-            ->withQueryString();
+        if ($request->filled('evaluation_type') && in_array($request->get('evaluation_type'), self::EVALUATION_TYPES, true)) {
+            $query->where('evaluation_type', $request->get('evaluation_type'));
+        }
 
-        return view('evaluations.index', [
+        if ($request->filled('severity_level') && in_array($request->get('severity_level'), self::SEVERITY_LEVELS, true)) {
+            $query->where('severity_level', $request->get('severity_level'));
+        }
+
+        if ($request->filled('risk_level') && in_array($request->get('risk_level'), self::RISK_LEVELS, true)) {
+            $query->where('risk_level', $request->get('risk_level'));
+        }
+
+        if ($request->filled('from')) {
+            $query->whereDate('evaluation_date', '>=', $request->date('from'));
+        }
+        if ($request->filled('to')) {
+            $query->whereDate('evaluation_date', '<=', $request->date('to'));
+        }
+
+        if ($request->filled('q')) {
+            $search = trim($request->get('q'));
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('patient', function ($qp) use ($search) {
+                    $qp->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('middle_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('patient_code', 'like', "%{$search}%");
+                })->orWhere('diagnosis', 'like', "%{$search}%")
+                 ->orWhere('presenting_complaints', 'like', "%{$search}%");
+            });
+        }
+
+        $evaluations = $query->paginate(15)->withQueryString();
+        $patients = PatientDetail::orderBy('first_name')->get(['id', 'first_name', 'middle_name', 'last_name', 'patient_code']);
+
+        return view('patient_evaluations.index', [
             'evaluations' => $evaluations,
+            'patients' => $patients,
             'filters' => [
-                'q' => $request->get('q'),
-                'type' => $request->get('type'),
-                'decision' => $request->get('decision'),
-                'from' => $request->get('from'),
-                'to' => $request->get('to'),
-                'status' => $status,
+                'evaluation_types' => self::EVALUATION_TYPES,
+                'severity_levels' => self::SEVERITY_LEVELS,
+                'risk_levels' => self::RISK_LEVELS,
             ],
         ]);
     }
 
-    // Show create form; supports preselected patient via ?patient_id=
-    public function create(Request $request)
+    public function create()
     {
-        $selectedPatientId = $request->integer('patient_id');
-        // Provide a small initial list; large lists should be fetched via AJAX lookup
-        $patients = PatientDetail::latest()->limit(100)->get();
+        $patients = PatientDetail::orderBy('first_name')->get(['id', 'first_name', 'middle_name', 'last_name', 'patient_code']);
 
-        return view('evaluations.create', compact('patients', 'selectedPatientId'));
-    }
-
-    // Persist new evaluation (includes severity_level, risk_level, priority_score)
-    public function store(StorePatientEvaluationRequest $request)
-    {
-        $userId = Auth::id();
-
-        $createdEvaluation = null;
-        $createdAdmission = null;
-
-        DB::transaction(function () use ($request, $userId, &$createdEvaluation, &$createdAdmission) {
-            // If decision is 'admit', force requires_admission to true for consistency
-            $requiresAdmission = $request->boolean('requires_admission') || $request->decision === PatientEvaluation::DECISION_ADMIT;
-
-            $evaluation = PatientEvaluation::create([
-                'patient_id' => $request->patient_id,
-                'psychiatrist_id' => $userId,
-                'evaluation_date' => $request->evaluation_date,
-                'evaluation_type' => $request->evaluation_type,
-                'presenting_complaints' => $request->presenting_complaints,
-                'clinical_observations' => $request->clinical_observations,
-                'diagnosis' => $request->diagnosis,
-                'recommendations' => $request->recommendations,
-                'decision' => $request->decision,
-                'requires_admission' => $requiresAdmission,
-                'admission_trigger_notes' => $request->admission_trigger_notes,
-                'decision_made_at' => now(),
-                // Grading fields
-                'severity_level' => $this->sanitizeSeverity($request->input('severity_level', 'mild')),
-                'risk_level' => $this->sanitizeRisk($request->input('risk_level', 'low')),
-                'priority_score' => $this->sanitizePriority($request->input('priority_score')),
-                'created_by' => $userId,
-            ]);
-
-            $createdEvaluation = $evaluation;
-
-            // Admission logic: create only if required and no active admission exists
-            if ($requiresAdmission) {
-                $createdAdmission = $this->createAdmissionIfNoneActive($evaluation, $userId);
-            }
-        });
-
-        // After transaction commit, send notification email(s) if next-of-kin email exists
-        try {
-            if ($createdEvaluation) {
-                $patient = PatientDetail::find($createdEvaluation->patient_id);
-
-                if ($patient) {
-                    $nokEmail = $patient->next_of_kin_email;
-                    $nokName = $patient->next_of_kin_name ?? ($patient->first_name . ' ' . $patient->last_name);
-
-                    if ($nokEmail) {
-                        $subject = "Evaluation outcome for {$patient->first_name} {$patient->last_name}";
-                        $bodyLines = [];
-                        $bodyLines[] = "Dear {$nokName},";
-                        $bodyLines[] = "";
-                        $bodyLines[] = "This is to inform you of the recent clinical evaluation for {$patient->first_name} {$patient->last_name} (Patient Code: {$patient->patient_code}). Below are the key details:";
-                        $bodyLines[] = "";
-                        $bodyLines[] = "Evaluation date: " . optional($createdEvaluation->evaluation_date)->format('Y-m-d');
-                        $bodyLines[] = "Evaluation type: " . ucfirst($createdEvaluation->evaluation_type);
-                        $bodyLines[] = "Decision: " . ucfirst($createdEvaluation->decision);
-                        // Grading fields
-                        $bodyLines[] = "Severity: " . ucfirst($createdEvaluation->severity_level ?? 'mild');
-                        $bodyLines[] = "Risk: " . ucfirst($createdEvaluation->risk_level ?? 'low');
-                        $bodyLines[] = "Priority score: " . ($createdEvaluation->priority_score !== null ? $createdEvaluation->priority_score : '—');
-
-                        if ($createdEvaluation->presenting_complaints) {
-                            $bodyLines[] = "";
-                            $bodyLines[] = "Presenting complaints:";
-                            $bodyLines[] = $createdEvaluation->presenting_complaints;
-                        }
-                        if ($createdEvaluation->diagnosis) {
-                            $bodyLines[] = "";
-                            $bodyLines[] = "Diagnosis:";
-                            $bodyLines[] = $createdEvaluation->diagnosis;
-                        }
-                        if ($createdEvaluation->recommendations) {
-                            $bodyLines[] = "";
-                            $bodyLines[] = "Recommendations:";
-                            $bodyLines[] = $createdEvaluation->recommendations;
-                        }
-
-                        // If admission was created, append admission details
-                        if ($createdAdmission) {
-                            $bodyLines[] = "";
-                            $bodyLines[] = "Admission details:";
-                            $bodyLines[] = "Admission date: " . optional($createdAdmission->admission_date)->format('Y-m-d');
-                            $bodyLines[] = "Reason: " . ($createdAdmission->admission_reason ?? '—');
-                            $bodyLines[] = "Assigned psychiatrist ID: " . ($createdAdmission->assigned_psychiatrist_id ?? '—');
-                            $bodyLines[] = "Room: " . ($createdAdmission->room_number ?? 'To be assigned');
-                            $bodyLines[] = "";
-                            $bodyLines[] = "The patient has been admitted and the family/next-of-kin will be contacted by the ward staff with further details.";
-                        } else {
-                            $bodyLines[] = "";
-                            $bodyLines[] = "No admission was required/created at this time.";
-                        }
-
-                        $bodyLines[] = "";
-                        $bodyLines[] = "If you have questions, please contact the clinic.";
-                        $body = implode("\n", $bodyLines);
-
-                        // Use EmailService to send the email (no attachments)
-                        $result = $this->emailService->sendEmailWithAttachment($nokEmail, $subject, $body, []);
-
-                        if (!empty($result['success']) && $result['success']) {
-                            Log::info('Evaluation notification sent', [
-                                'patient_id' => $patient->id,
-                                'evaluation_id' => $createdEvaluation->id,
-                                'admission_id' => $createdAdmission->id ?? null,
-                                'recipient' => $nokEmail,
-                                'response' => $result['data'] ?? null,
-                            ]);
-                        } else {
-                            Log::warning('Evaluation notification failed', [
-                                'patient_id' => $patient->id,
-                                'evaluation_id' => $createdEvaluation->id,
-                                'admission_id' => $createdAdmission->id ?? null,
-                                'recipient' => $nokEmail,
-                                'error' => $result['error'] ?? 'unknown',
-                            ]);
-                        }
-                    } else {
-                        Log::info('No next-of-kin email configured for patient; skipping notification', [
-                            'patient_id' => $patient->id,
-                            'evaluation_id' => $createdEvaluation->id,
-                        ]);
-                    }
-                }
-            }
-        } catch (\Throwable $e) {
-            // Log but do not interrupt normal flow
-            Log::error('Error sending evaluation notification', [
-                'exception' => $e->getMessage(),
-                'evaluation_id' => $createdEvaluation->id ?? null,
-            ]);
-        }
-
-        return redirect()->route('evaluations.index')->with('success', 'Evaluation saved successfully.');
-    }
-
-    // Show details (also allow viewing soft-deleted evaluation)
-    public function show($id)
-    {
-        $evaluation = PatientEvaluation::withTrashed()
-            ->with(['patient', 'psychiatrist', 'creator', 'lastModifier'])
-            ->findOrFail($id);
-
-        return view('evaluations.show', compact('evaluation'));
-    }
-
-    // Edit form
-    public function edit(PatientEvaluation $evaluation)
-    {
-        $patients = PatientDetail::latest()->limit(100)->get();
-        return view('evaluations.edit', compact('evaluation', 'patients'));
-    }
-
-    // Update record (includes severity_level, risk_level, priority_score)
-    public function update(UpdatePatientEvaluationRequest $request, PatientEvaluation $evaluation)
-    {
-        $userId = Auth::id();
-
-        $createdAdmission = null;
-
-        DB::transaction(function () use ($request, $evaluation, $userId, &$createdAdmission) {
-            $changedDecision = $evaluation->decision !== $request->decision;
-            $requiresAdmission = $request->boolean('requires_admission') || $request->decision === PatientEvaluation::DECISION_ADMIT;
-
-            $evaluation->update([
-                'evaluation_date' => $request->evaluation_date,
-                'evaluation_type' => $request->evaluation_type,
-                'presenting_complaints' => $request->presenting_complaints,
-                'clinical_observations' => $request->clinical_observations,
-                'diagnosis' => $request->diagnosis,
-                'recommendations' => $request->recommendations,
-                'decision' => $request->decision,
-                'requires_admission' => $requiresAdmission,
-                'admission_trigger_notes' => $request->admission_trigger_notes,
-                'last_modified_by' => $userId,
-                'decision_made_at' => $changedDecision ? now() : $evaluation->decision_made_at,
-                // Grading fields
-                'severity_level' => $this->sanitizeSeverity($request->input('severity_level', $evaluation->severity_level ?? 'mild')),
-                'risk_level' => $this->sanitizeRisk($request->input('risk_level', $evaluation->risk_level ?? 'low')),
-                'priority_score' => $this->sanitizePriority($request->input('priority_score', $evaluation->priority_score)),
-            ]);
-
-            // Admission creation on update if newly requiring admission and none active
-            if ($requiresAdmission) {
-                $createdAdmission = $this->createAdmissionIfNoneActive($evaluation, $userId, 'Based on evaluation update');
-            }
-        });
-
-        // Send notification to next-of-kin with updated evaluation outcome and admission details (if created)
-        try {
-            $patient = PatientDetail::find($evaluation->patient_id);
-            if ($patient) {
-                $nokEmail = $patient->next_of_kin_email;
-                $nokName = $patient->next_of_kin_name ?? ($patient->first_name . ' ' . $patient->last_name);
-
-                if ($nokEmail) {
-                    $subject = "Updated evaluation outcome for {$patient->first_name} {$patient->last_name}";
-                    $bodyLines = [];
-                    $bodyLines[] = "Dear {$nokName},";
-                    $bodyLines[] = "";
-                    $bodyLines[] = "The evaluation for {$patient->first_name} {$patient->last_name} has been updated. Key details:";
-                    $bodyLines[] = "";
-                    $bodyLines[] = "Evaluation date: " . optional($evaluation->evaluation_date)->format('Y-m-d');
-                    $bodyLines[] = "Decision: " . ucfirst($evaluation->decision);
-                    // Grading fields
-                    $bodyLines[] = "Severity: " . ucfirst($evaluation->severity_level ?? 'mild');
-                    $bodyLines[] = "Risk: " . ucfirst($evaluation->risk_level ?? 'low');
-                    $bodyLines[] = "Priority score: " . ($evaluation->priority_score !== null ? $evaluation->priority_score : '—');
-
-                    if ($evaluation->presenting_complaints) {
-                        $bodyLines[] = "";
-                        $bodyLines[] = "Presenting complaints:";
-                        $bodyLines[] = $evaluation->presenting_complaints;
-                    }
-                    if ($evaluation->diagnosis) {
-                        $bodyLines[] = "";
-                        $bodyLines[] = "Diagnosis:";
-                        $bodyLines[] = $evaluation->diagnosis;
-                    }
-                    if ($evaluation->recommendations) {
-                        $bodyLines[] = "";
-                        $bodyLines[] = "Recommendations:";
-                        $bodyLines[] = $evaluation->recommendations;
-                    }
-
-                    if ($createdAdmission) {
-                        $bodyLines[] = "";
-                        $bodyLines[] = "Admission details:";
-                        $bodyLines[] = "Admission date: " . optional($createdAdmission->admission_date)->format('Y-m-d');
-                        $bodyLines[] = "Reason: " . ($createdAdmission->admission_reason ?? '—');
-                        $bodyLines[] = "Assigned psychiatrist ID: " . ($createdAdmission->assigned_psychiatrist_id ?? '—');
-                        $bodyLines[] = "Room: " . ($createdAdmission->room_number ?? 'To be assigned');
-                    }
-
-                    $bodyLines[] = "";
-                    $bodyLines[] = "If you have questions, please contact the clinic.";
-                    $body = implode("\n", $bodyLines);
-
-                    $result = $this->emailService->sendEmailWithAttachment($nokEmail, $subject, $body, []);
-
-                    if (!empty($result['success']) && $result['success']) {
-                        Log::info('Evaluation update notification sent', [
-                            'patient_id' => $patient->id,
-                            'evaluation_id' => $evaluation->id,
-                            'admission_id' => $createdAdmission->id ?? null,
-                            'recipient' => $nokEmail,
-                            'response' => $result['data'] ?? null,
-                        ]);
-                    } else {
-                        Log::warning('Evaluation update notification failed', [
-                            'patient_id' => $patient->id,
-                            'evaluation_id' => $evaluation->id,
-                            'admission_id' => $createdAdmission->id ?? null,
-                            'recipient' => $nokEmail,
-                            'error' => $result['error'] ?? 'unknown',
-                        ]);
-                    }
-                } else {
-                    Log::info('No next-of-kin email configured; skipping update notification', [
-                        'patient_id' => $patient->id,
-                        'evaluation_id' => $evaluation->id,
-                    ]);
-                }
-            }
-        } catch (\Throwable $e) {
-            Log::error('Error sending evaluation update notification', [
-                'exception' => $e->getMessage(),
-                'evaluation_id' => $evaluation->id ?? null,
-            ]);
-        }
-
-        return redirect()->route('evaluations.index')->with('success', 'Evaluation updated.');
-    }
-
-    // Soft-delete evaluation
-    public function destroy(PatientEvaluation $evaluation)
-    {
-        $evaluation->delete();
-        return redirect()->route('evaluations.index')->with('success', 'Evaluation archived.');
-    }
-
-    // Restore soft-deleted evaluation
-    public function restore($id)
-    {
-        $evaluation = PatientEvaluation::onlyTrashed()->findOrFail($id);
-        $evaluation->restore();
-
-        return redirect()->route('evaluations.index', ['status' => 'trashed'])->with('success', 'Evaluation restored.');
-    }
-
-    // Permanently delete evaluation
-    public function forceDelete($id)
-    {
-        $evaluation = PatientEvaluation::onlyTrashed()->findOrFail($id);
-        $evaluation->forceDelete();
-
-        return redirect()->route('evaluations.index', ['status' => 'trashed'])->with('success', 'Evaluation permanently deleted.');
-    }
-
-    private function createAdmissionIfNoneActive(PatientEvaluation $evaluation, int $userId, ?string $reasonOverride = null): ?Admission
-    {
-        $hasActiveAdmission = Admission::where('patient_id', $evaluation->patient_id)
-            ->where('status', 'active')
-            ->exists();
-
-        if ($hasActiveAdmission) {
-            return null;
-        }
-
-        return Admission::create([
-            'patient_id' => $evaluation->patient_id,
-            'evaluation_id' => $evaluation->id,
-            'admission_date' => now(),
-            'admission_reason' => $reasonOverride ?? ($evaluation->admission_trigger_notes ?: 'Based on evaluation outcome'),
-            'admitted_by' => $userId,
-            'assigned_psychiatrist_id' => $evaluation->psychiatrist_id,
-            // 'care_level_id' => null, // optional
-            'status' => 'active',
-            'created_by' => $userId,
-            // 'last_modified_by' => null,
+        return view('patient_evaluations.create', [
+            'patients' => $patients,
+            'evaluationTypes' => self::EVALUATION_TYPES,
+            'severityLevels' => self::SEVERITY_LEVELS,
+            'riskLevels' => self::RISK_LEVELS,
+            'decisions' => self::DECISIONS,
         ]);
     }
 
-    private function sanitizeSeverity(?string $val): string
+    public function store(Request $request)
     {
-        $allowed = ['mild', 'moderate', 'severe', 'critical'];
-        $val = strtolower((string) $val);
+        $validated = $request->validate([
+            'patient_id' => ['required', 'integer', 'exists:patient_details,id'],
+            'evaluation_date' => ['required', 'date'],
+            'evaluation_type' => ['required', Rule::in(self::EVALUATION_TYPES)],
+            'presenting_complaints' => ['nullable', 'string'],
+            'clinical_observations' => ['nullable', 'string'],
+            'diagnosis' => ['nullable', 'string'],
+            'recommendations' => ['nullable', 'string'],
+            'severity_level' => ['required', Rule::in(self::SEVERITY_LEVELS)],
+            'risk_level' => ['required', Rule::in(self::RISK_LEVELS)],
+            'priority_score' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'decision' => ['required', Rule::in(self::DECISIONS)],
+            'requires_admission' => ['sometimes', 'boolean'],
+            'admission_trigger_notes' => ['nullable', 'string'],
+        ]);
 
-        return in_array($val, $allowed, true) ? $val : 'mild';
-    }
+        $requiresAdmission = ($request->boolean('requires_admission'))
+            || ($validated['decision'] === 'admit')
+            || ($validated['severity_level'] === 'critical')
+            || ($validated['risk_level'] === 'high')
+            || ((int)($validated['priority_score'] ?? 0) >= 8);
 
-    private function sanitizeRisk(?string $val): string
-    {
-        $allowed = ['low', 'medium', 'high'];
-        $val = strtolower((string) $val);
+        $evaluation = new PatientEvaluation();
+        $evaluation->fill($validated);
+        $evaluation->psychiatrist_id = Auth::id();
+        $evaluation->created_by = Auth::id();
+        $evaluation->last_modified_by = Auth::id();
+        $evaluation->requires_admission = $requiresAdmission;
+        $evaluation->decision_made_at = now();
 
-        return in_array($val, $allowed, true) ? $val : 'low';
-    }
-
-    private function sanitizePriority($val): ?int
-    {
-        if ($val === null || $val === '') {
-            return null;
+        if ($requiresAdmission && empty($validated['admission_trigger_notes'])) {
+            $evaluation->admission_trigger_notes = 'Auto-flagged by decision/severity/risk/priority logic.';
         }
-        $n = (int) $val;
-        if ($n < 1) $n = 1;
-        if ($n > 10) $n = 10;
 
-        return $n;
+        $evaluation->save();
+
+        return redirect()
+            ->route('evaluations.show', $evaluation->id)
+            ->with('status', 'Evaluation created successfully.');
+    }
+
+    public function show(string $id)
+    {
+        $evaluation = PatientEvaluation::with(['patient', 'psychiatrist'])->findOrFail($id);
+
+        return view('patient_evaluations.show', compact('evaluation'));
+    }
+
+    public function edit(string $id)
+    {
+        $evaluation = PatientEvaluation::with(['patient', 'psychiatrist'])->findOrFail($id);
+        $patients = PatientDetail::orderBy('first_name')->get(['id', 'first_name', 'middle_name', 'last_name', 'patient_code']);
+
+        // Note: Your routes don’t currently include an update endpoint.
+        // If you want to enable saving from the edit view, add:
+        // Route::put('/patient-evaluations/{id}', [PatientEvaluationController::class, 'update'])->name('evaluations.update');
+
+        return view('patient_evaluations.edit', [
+            'evaluation' => $evaluation,
+            'patients' => $patients,
+            'evaluationTypes' => self::EVALUATION_TYPES,
+            'severityLevels' => self::SEVERITY_LEVELS,
+            'riskLevels' => self::RISK_LEVELS,
+            'decisions' => self::DECISIONS,
+        ]);
+    }
+
+    // Optional: Only works if you add a PUT/PATCH route.
+    public function update(Request $request, string $id)
+    {
+        $evaluation = PatientEvaluation::findOrFail($id);
+
+        $validated = $request->validate([
+            'patient_id' => ['required', 'integer', 'exists:patient_details,id'],
+            'evaluation_date' => ['required', 'date'],
+            'evaluation_type' => ['required', Rule::in(self::EVALUATION_TYPES)],
+            'presenting_complaints' => ['nullable', 'string'],
+            'clinical_observations' => ['nullable', 'string'],
+            'diagnosis' => ['nullable', 'string'],
+            'recommendations' => ['nullable', 'string'],
+            'severity_level' => ['required', Rule::in(self::SEVERITY_LEVELS)],
+            'risk_level' => ['required', Rule::in(self::RISK_LEVELS)],
+            'priority_score' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'decision' => ['required', Rule::in(self::DECISIONS)],
+            'requires_admission' => ['sometimes', 'boolean'],
+            'admission_trigger_notes' => ['nullable', 'string'],
+        ]);
+
+        $requiresAdmission = ($request->boolean('requires_admission'))
+            || ($validated['decision'] === 'admit')
+            || ($validated['severity_level'] === 'critical')
+            || ($validated['risk_level'] === 'high')
+            || ((int)($validated['priority_score'] ?? 0) >= 8);
+
+        $evaluation->fill($validated);
+        $evaluation->requires_admission = $requiresAdmission;
+        $evaluation->last_modified_by = Auth::id();
+
+        if ($requiresAdmission && empty($validated['admission_trigger_notes'])) {
+            $evaluation->admission_trigger_notes = 'Auto-flagged by decision/severity/risk/priority logic.';
+        }
+
+        // Decision time refresh on edits
+        $evaluation->decision_made_at = now();
+
+        $evaluation->save();
+
+        return redirect()
+            ->route('evaluations.show', $evaluation->id)
+            ->with('status', 'Evaluation updated successfully.');
     }
 }
