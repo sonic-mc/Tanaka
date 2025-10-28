@@ -62,12 +62,13 @@ class PatientEvaluationController extends Controller
     public function create(Request $request)
     {
         $selectedPatientId = $request->integer('patient_id');
+        // Provide a small initial list; large lists should be fetched via AJAX lookup
         $patients = PatientDetail::latest()->limit(100)->get();
 
         return view('evaluations.create', compact('patients', 'selectedPatientId'));
     }
 
-    // Persist new evaluation
+    // Persist new evaluation (includes severity_level, risk_level, priority_score)
     public function store(StorePatientEvaluationRequest $request)
     {
         $userId = Auth::id();
@@ -76,7 +77,7 @@ class PatientEvaluationController extends Controller
         $createdAdmission = null;
 
         DB::transaction(function () use ($request, $userId, &$createdEvaluation, &$createdAdmission) {
-            // If decision is 'admit', force requires_admission to true
+            // If decision is 'admit', force requires_admission to true for consistency
             $requiresAdmission = $request->boolean('requires_admission') || $request->decision === PatientEvaluation::DECISION_ADMIT;
 
             $evaluation = PatientEvaluation::create([
@@ -92,6 +93,7 @@ class PatientEvaluationController extends Controller
                 'requires_admission' => $requiresAdmission,
                 'admission_trigger_notes' => $request->admission_trigger_notes,
                 'decision_made_at' => now(),
+                // Grading fields
                 'severity_level' => $this->sanitizeSeverity($request->input('severity_level', 'mild')),
                 'risk_level' => $this->sanitizeRisk($request->input('risk_level', 'low')),
                 'priority_score' => $this->sanitizePriority($request->input('priority_score')),
@@ -100,15 +102,17 @@ class PatientEvaluationController extends Controller
 
             $createdEvaluation = $evaluation;
 
+            // Admission logic: create only if required and no active admission exists
             if ($requiresAdmission) {
                 $createdAdmission = $this->createAdmissionIfNoneActive($evaluation, $userId);
             }
         });
 
-        // Notify NOK
+        // After transaction commit, send notification email(s) if next-of-kin email exists
         try {
             if ($createdEvaluation) {
                 $patient = PatientDetail::find($createdEvaluation->patient_id);
+
                 if ($patient) {
                     $nokEmail = $patient->next_of_kin_email;
                     $nokName = $patient->next_of_kin_name ?? ($patient->first_name . ' ' . $patient->last_name);
@@ -123,6 +127,7 @@ class PatientEvaluationController extends Controller
                         $bodyLines[] = "Evaluation date: " . optional($createdEvaluation->evaluation_date)->format('Y-m-d');
                         $bodyLines[] = "Evaluation type: " . ucfirst($createdEvaluation->evaluation_type);
                         $bodyLines[] = "Decision: " . ucfirst($createdEvaluation->decision);
+                        // Grading fields
                         $bodyLines[] = "Severity: " . ucfirst($createdEvaluation->severity_level ?? 'mild');
                         $bodyLines[] = "Risk: " . ucfirst($createdEvaluation->risk_level ?? 'low');
                         $bodyLines[] = "Priority score: " . ($createdEvaluation->priority_score !== null ? $createdEvaluation->priority_score : '—');
@@ -143,6 +148,7 @@ class PatientEvaluationController extends Controller
                             $bodyLines[] = $createdEvaluation->recommendations;
                         }
 
+                        // If admission was created, append admission details
                         if ($createdAdmission) {
                             $bodyLines[] = "";
                             $bodyLines[] = "Admission details:";
@@ -161,6 +167,7 @@ class PatientEvaluationController extends Controller
                         $bodyLines[] = "If you have questions, please contact the clinic.";
                         $body = implode("\n", $bodyLines);
 
+                        // Use EmailService to send the email (no attachments)
                         $result = $this->emailService->sendEmailWithAttachment($nokEmail, $subject, $body, []);
 
                         if (!empty($result['success']) && $result['success']) {
@@ -189,6 +196,7 @@ class PatientEvaluationController extends Controller
                 }
             }
         } catch (\Throwable $e) {
+            // Log but do not interrupt normal flow
             Log::error('Error sending evaluation notification', [
                 'exception' => $e->getMessage(),
                 'evaluation_id' => $createdEvaluation->id ?? null,
@@ -215,7 +223,7 @@ class PatientEvaluationController extends Controller
         return view('evaluations.edit', compact('evaluation', 'patients'));
     }
 
-    // Update record
+    // Update record (includes severity_level, risk_level, priority_score)
     public function update(UpdatePatientEvaluationRequest $request, PatientEvaluation $evaluation)
     {
         $userId = Auth::id();
@@ -238,17 +246,19 @@ class PatientEvaluationController extends Controller
                 'admission_trigger_notes' => $request->admission_trigger_notes,
                 'last_modified_by' => $userId,
                 'decision_made_at' => $changedDecision ? now() : $evaluation->decision_made_at,
+                // Grading fields
                 'severity_level' => $this->sanitizeSeverity($request->input('severity_level', $evaluation->severity_level ?? 'mild')),
                 'risk_level' => $this->sanitizeRisk($request->input('risk_level', $evaluation->risk_level ?? 'low')),
                 'priority_score' => $this->sanitizePriority($request->input('priority_score', $evaluation->priority_score)),
             ]);
 
+            // Admission creation on update if newly requiring admission and none active
             if ($requiresAdmission) {
                 $createdAdmission = $this->createAdmissionIfNoneActive($evaluation, $userId, 'Based on evaluation update');
             }
         });
 
-        // Notify NOK for updates
+        // Send notification to next-of-kin with updated evaluation outcome and admission details (if created)
         try {
             $patient = PatientDetail::find($evaluation->patient_id);
             if ($patient) {
@@ -264,6 +274,7 @@ class PatientEvaluationController extends Controller
                     $bodyLines[] = "";
                     $bodyLines[] = "Evaluation date: " . optional($evaluation->evaluation_date)->format('Y-m-d');
                     $bodyLines[] = "Decision: " . ucfirst($evaluation->decision);
+                    // Grading fields
                     $bodyLines[] = "Severity: " . ucfirst($evaluation->severity_level ?? 'mild');
                     $bodyLines[] = "Risk: " . ucfirst($evaluation->risk_level ?? 'low');
                     $bodyLines[] = "Priority score: " . ($evaluation->priority_score !== null ? $evaluation->priority_score : '—');
@@ -375,8 +386,10 @@ class PatientEvaluationController extends Controller
             'admission_reason' => $reasonOverride ?? ($evaluation->admission_trigger_notes ?: 'Based on evaluation outcome'),
             'admitted_by' => $userId,
             'assigned_psychiatrist_id' => $evaluation->psychiatrist_id,
+            // 'care_level_id' => null, // optional
             'status' => 'active',
             'created_by' => $userId,
+            // 'last_modified_by' => null,
         ]);
     }
 
@@ -384,6 +397,7 @@ class PatientEvaluationController extends Controller
     {
         $allowed = ['mild', 'moderate', 'severe', 'critical'];
         $val = strtolower((string) $val);
+
         return in_array($val, $allowed, true) ? $val : 'mild';
     }
 
@@ -391,6 +405,7 @@ class PatientEvaluationController extends Controller
     {
         $allowed = ['low', 'medium', 'high'];
         $val = strtolower((string) $val);
+
         return in_array($val, $allowed, true) ? $val : 'low';
     }
 
@@ -402,6 +417,7 @@ class PatientEvaluationController extends Controller
         $n = (int) $val;
         if ($n < 1) $n = 1;
         if ($n > 10) $n = 10;
+
         return $n;
     }
 }
