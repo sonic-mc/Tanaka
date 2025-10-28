@@ -8,7 +8,7 @@
             <div class="row g-3 align-items-end">
                 <div class="col-md-6">
                     <label class="form-label">Patient <span class="text-danger">*</span></label>
-                    <select name="patient_id" id="patient_id" class="form-select" required>
+                    <select name="patient_id" id="patient_id" class="form-select" required @if($isEdit) disabled @endif>
                         <option value="">-- Select Patient --</option>
                         @foreach($patients as $patient)
                             <option value="{{ $patient->id }}"
@@ -17,6 +17,9 @@
                             </option>
                         @endforeach
                     </select>
+                    @if($isEdit)
+                        <input type="hidden" name="patient_id" value="{{ $evaluation->patient_id }}">
+                    @endif
                     <div class="form-text">Start typing below to quickly find a patient.</div>
                 </div>
                 <div class="col-md-6">
@@ -66,6 +69,7 @@
         <option value="0" @selected(!$reqAdm)>No</option>
         <option value="1" @selected($reqAdm)>Yes</option>
     </select>
+    <div class="form-text">Selecting "Admit" as decision will automatically treat this as "Yes".</div>
 </div>
 
 <div class="col-12">

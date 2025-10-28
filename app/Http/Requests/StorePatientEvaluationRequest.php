@@ -3,7 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
+use App\Models\PatientEvaluation;
 
 class StorePatientEvaluationRequest extends FormRequest
 {
@@ -15,24 +15,37 @@ class StorePatientEvaluationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'patient_id' => ['required', 'exists:patient_details,id'],
+            'patient_id' => ['required', 'integer', 'exists:patient_details,id'],
             'evaluation_date' => ['required', 'date'],
-            'evaluation_type' => ['required', Rule::in(['initial', 'follow-up', 'emergency'])],
+            'evaluation_type' => ['required', 'in:' . implode(',', [
+                PatientEvaluation::TYPE_INITIAL,
+                PatientEvaluation::TYPE_FOLLOW_UP,
+                PatientEvaluation::TYPE_EMERGENCY,
+            ])],
             'presenting_complaints' => ['nullable', 'string'],
             'clinical_observations' => ['nullable', 'string'],
             'diagnosis' => ['nullable', 'string'],
             'recommendations' => ['nullable', 'string'],
-            'decision' => ['required', Rule::in(['admit', 'outpatient', 'refer', 'monitor'])],
-            'requires_admission' => ['required', 'boolean'],
+            'decision' => ['required', 'in:' . implode(',', [
+                PatientEvaluation::DECISION_ADMIT,
+                PatientEvaluation::DECISION_OUTPATIENT,
+                PatientEvaluation::DECISION_REFER,
+                PatientEvaluation::DECISION_MONITOR,
+            ])],
+            'requires_admission' => ['nullable', 'boolean'],
             'admission_trigger_notes' => ['nullable', 'string'],
-        ];
-    }
-
-    public function messages(): array
-    {
-        return [
-            'patient_id.required' => 'Please select a patient.',
-            'evaluation_date.required' => 'Evaluation date is required.',
+            'severity_level' => ['required', 'in:' . implode(',', [
+                PatientEvaluation::SEVERITY_MILD,
+                PatientEvaluation::SEVERITY_MODERATE,
+                PatientEvaluation::SEVERITY_SEVERE,
+                PatientEvaluation::SEVERITY_CRITICAL,
+            ])],
+            'risk_level' => ['required', 'in:' . implode(',', [
+                PatientEvaluation::RISK_LOW,
+                PatientEvaluation::RISK_MEDIUM,
+                PatientEvaluation::RISK_HIGH,
+            ])],
+            'priority_score' => ['nullable', 'integer', 'min:1', 'max:10'],
         ];
     }
 }
