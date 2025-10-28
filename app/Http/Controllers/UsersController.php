@@ -13,21 +13,25 @@ class UsersController extends Controller
      */
     public function index()
     {
+        $currentUser = auth()->user();
+
         // Restrict to admins only
-        if (auth()->user()->role !== 'admin') {
+        if (! $currentUser || $currentUser->role !== 'admin') {
             abort(403, 'Unauthorized access');
         }
 
-        // Get users with no role explicitly set (null or empty)
-        $users = User::whereNull('role')->orWhere('role', '')->get();
-
-        // Count users without roles
-        $noRoleCount = $users->count();
+        // Get users with no role explicitly set
+        $usersWithoutRoles = User::whereNull('role')->orWhere('role', '')->get();
+        $noRoleCount = $usersWithoutRoles->count();
 
         // Define available roles manually
-        $roles = ['admin', 'psychiatrist', 'nurse', 'clinician'];
+        $availableRoles = ['admin', 'psychiatrist', 'nurse', 'clinician'];
 
-        return view('users.index', compact('users', 'noRoleCount', 'roles'));
+        return view('users.index', [
+            'users' => $usersWithoutRoles,
+            'noRoleCount' => $noRoleCount,
+            'roles' => $availableRoles,
+        ]);
     }
 
     /**
@@ -35,8 +39,10 @@ class UsersController extends Controller
      */
     public function assignRole(Request $request, $id)
     {
+        $currentUser = auth()->user();
+
         // Restrict to admins only
-        if (auth()->user()->role !== 'admin') {
+        if (! $currentUser || $currentUser->role !== 'admin') {
             abort(403, 'Unauthorized access');
         }
 

@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
 
-
 class RoleMiddleware
 {
     /**
@@ -24,11 +23,11 @@ class RoleMiddleware
             abort(403, 'Unauthorized');
         }
 
-        // Split roles by pipe (Spatie style)
+        // Split roles by pipe (e.g., "admin|nurse")
         $allowedRoles = explode('|', $roles);
 
-        // Check if user has any of the allowed roles
-        if (! $user->hasAnyRole($allowedRoles)) {
+        // Check if user's role matches any allowed role
+        if (! in_array($user->role, $allowedRoles)) {
             abort(403, 'Unauthorized');
         }
 
