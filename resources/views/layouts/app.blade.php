@@ -215,7 +215,7 @@
         @endif
 
         {{-- Psychiatrist Exclusive --}}
-        @if(auth()->user()->hasRole('psychiatrist'))
+        @if(auth()->user()->role === 'psychiatrist')
 
             <li class="nav-item mt-3 text-white fw-bold">Psychiatrist</li>
             <li class="nav-item dropdown">

@@ -5,11 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -20,26 +19,24 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**
      * Relationships
      */
 
-    // If you're using Spatie, you don't need this custom belongsTo Role,
-    // because roles are handled via the roles/permissions tables automatically.
-    // However, we’ll keep it safely for backward compatibility.
-    public function role()
-    {
-        return $this->belongsTo(\Spatie\Permission\Models\Role::class, 'role_id', 'id');
-    }
-
     public function incidentReports()
     {
         return $this->hasMany(\App\Models\IncidentReport::class, 'reported_by');
     }
 
-   
+    public function assignedPatients()
+    {
+        return $this->belongsToMany(Admission::class, 'nurse_patient_assignments', 'nurse_id', 'admission_id')
+                    ->withPivot('shift', 'assigned_date', 'notes')
+                    ->withTimestamps();
+    }
 
     /**
      * The attributes that should be hidden for serialization.
@@ -69,28 +66,23 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        return $this->hasRole('admin');
+        return $this->role === 'admin';
     }
 
     /**
-     * Helper: Assign a role dynamically (wrapper for Spatie).
+     * Helper: Assign a role directly.
      */
     public function assignSystemRole(string $roleName): void
     {
-        $this->syncRoles([$roleName]);
+        $this->role = $roleName;
+        $this->save();
     }
 
-      // Staff considered “clinicians” for assignment/selection purposes
-      public function scopeClinicalStaff($query)
-      {
-          return $query->whereIn('role', ['psychiatrist', 'nurse']);
-      }
-
-      public function assignedPatients()
-        {
-            return $this->belongsToMany(Admission::class, 'nurse_patient_assignments', 'nurse_id', 'admission_id')
-                        ->withPivot('shift', 'assigned_date', 'notes')
-                        ->withTimestamps();
-        }
-
+    /**
+     * Scope: Staff considered “clinical” for assignment/selection purposes.
+     */
+    public function scopeClinicalStaff($query)
+    {
+        return $query->whereIn('role', ['psychiatrist', 'nurse']);
+    }
 }
