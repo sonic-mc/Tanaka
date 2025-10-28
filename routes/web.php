@@ -25,6 +25,7 @@ use App\Http\Controllers\UsersController;
 use App\Http\Controllers\DashboardNotificationController;
 
 use App\Http\Controllers\PatientEvaluationController;
+use App\Http\Controllers\Billing\BillingController;
 use App\Http\Controllers\NurseAssignmentController;
 use App\Http\Controllers\ConsultationFeeController;
 use App\Http\Controllers\GradingController;
@@ -159,9 +160,9 @@ Route::delete('nurse-assignments/{id}', [NurseAssignmentController::class, 'dest
 
 Route::prefix('admin')->name('admin.')->group(function () {
     // If you intended BillingStatementController, adjust accordingly
-    // Route::resource('billings', BillingStatementController::class);
+    Route::resource('billings', BillingStatementController::class);
     // Otherwise, ensure BillingController is imported at the top if it exists.
-    Route::resource('billings', \App\Http\Controllers\BillingController::class);
+    
 });
 
 // Progress reports (admin prefixed, no role guard here; relies on controller for checks)
