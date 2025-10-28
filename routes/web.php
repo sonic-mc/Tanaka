@@ -58,6 +58,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('care-levels', CareLevelController::class);
     Route::resource('tasks', TaskController::class);
     Route::resource('payments', PaymentController::class);
+    Route::post('/invoices/{invoice}/payments', [PaymentController::class, 'store'])->name('payments.store');
     Route::resource('audit-logs', AuditLogController::class);
     Route::resource('backups', BackupController::class);
     Route::resource('notifications', NotificationController::class);

@@ -9,53 +9,67 @@
     </div>
     <div class="col-md-3 mb-3">
         <label class="form-label">First Name <span class="text-danger">*</span></label>
-        <input type="text" name="first_name" class="form-control"
-               value="{{ old('first_name', $patient->first_name ?? '') }}" required>
+        <input type="text" name="first_name" class="form-control @error('first_name') is-invalid @enderror"
+               value="{{ old('first_name', $patient->first_name ?? '') }}" required maxlength="100" autocomplete="given-name">
+        @error('first_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     <div class="col-md-3 mb-3">
         <label class="form-label">Middle Name</label>
-        <input type="text" name="middle_name" class="form-control"
-               value="{{ old('middle_name', $patient->middle_name ?? '') }}">
+        <input type="text" name="middle_name" class="form-control @error('middle_name') is-invalid @enderror"
+               value="{{ old('middle_name', $patient->middle_name ?? '') }}" maxlength="100" autocomplete="additional-name">
+        @error('middle_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     <div class="col-md-3 mb-3">
         <label class="form-label">Last Name <span class="text-danger">*</span></label>
-        <input type="text" name="last_name" class="form-control"
-               value="{{ old('last_name', $patient->last_name ?? '') }}" required>
+        <input type="text" name="last_name" class="form-control @error('last_name') is-invalid @enderror"
+               value="{{ old('last_name', $patient->last_name ?? '') }}" required maxlength="100" autocomplete="family-name">
+        @error('last_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
 </div>
 
 <div class="row">
     <div class="col-md-3 mb-3">
         <label class="form-label">Gender <span class="text-danger">*</span></label>
-        <select name="gender" class="form-select" required>
-            @php $g = old('gender', $patient->gender ?? ''); @endphp
+        @php $g = old('gender', $patient->gender ?? ''); @endphp
+        <select name="gender" class="form-select @error('gender') is-invalid @enderror" required autocomplete="sex">
             <option value="">-- Select --</option>
             <option value="male" {{ $g === 'male' ? 'selected' : '' }}>Male</option>
             <option value="female" {{ $g === 'female' ? 'selected' : '' }}>Female</option>
             <option value="other" {{ $g === 'other' ? 'selected' : '' }}>Other</option>
         </select>
+        @error('gender')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     <div class="col-md-3 mb-3">
         <label class="form-label">Date of Birth</label>
-        <input type="date" name="dob" class="form-control"
-               value="{{ old('dob', optional($patient->dob)->format('Y-m-d')) }}">
+        <input type="date" name="dob" class="form-control @error('dob') is-invalid @enderror"
+               value="{{ old('dob', optional($patient->dob)->format('Y-m-d')) }}"
+               min="1900-01-01" max="{{ now()->format('Y-m-d') }}" autocomplete="bday">
+        @error('dob')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     <div class="col-md-3 mb-3">
         <label class="form-label">National ID Number</label>
-        <input type="text" name="national_id_number" class="form-control"
-               value="{{ old('national_id_number', $patient->national_id_number ?? '') }}">
+        <input type="text" name="national_id_number" id="national_id_number"
+               class="form-control @error('national_id_number') is-invalid @enderror"
+               value="{{ old('national_id_number', $patient->national_id_number ?? '') }}" maxlength="50" autocomplete="off">
+        @error('national_id_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
+        <div class="form-text">Provide either National ID or Passport Number.</div>
     </div>
     <div class="col-md-3 mb-3">
         <label class="form-label">Passport Number</label>
-        <input type="text" name="passport_number" class="form-control"
-               value="{{ old('passport_number', $patient->passport_number ?? '') }}">
+        <input type="text" name="passport_number" id="passport_number"
+               class="form-control @error('passport_number') is-invalid @enderror"
+               value="{{ old('passport_number', $patient->passport_number ?? '') }}" maxlength="50" autocomplete="off">
+        @error('passport_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
 </div>
 
 <div class="row">
     <div class="col-md-4 mb-3">
         <label class="form-label">Photo</label>
-        <input type="file" name="photo" class="form-control" accept=".jpg,.jpeg,.png,.webp">
+        <input type="file" name="photo" id="photo" class="form-control @error('photo') is-invalid @enderror"
+               accept=".jpg,.jpeg,.png,.webp">
+        <div class="form-text">Max 2MB. Minimum size 80x80 px.</div>
+        @error('photo')<div class="invalid-feedback">{{ $message }}</div>@enderror
         @if(!empty($patient->photo))
             <div class="mt-2">
                 <img src="{{ asset('storage/'.$patient->photo) }}" alt="Current photo" width="80" height="80" class="rounded object-fit-cover">
@@ -64,42 +78,49 @@
     </div>
     <div class="col-md-4 mb-3">
         <label class="form-label">Email</label>
-        <input type="email" name="email" class="form-control"
-               value="{{ old('email', $patient->email ?? '') }}">
+        <input type="email" name="email" class="form-control @error('email') is-invalid @enderror"
+               value="{{ old('email', $patient->email ?? '') }}" maxlength="255" autocomplete="email">
+        @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     <div class="col-md-4 mb-3">
         <label class="form-label">Contact Number</label>
-        <input type="text" name="contact_number" class="form-control"
-               value="{{ old('contact_number', $patient->contact_number ?? '') }}">
+        <input type="tel" name="contact_number" class="form-control @error('contact_number') is-invalid @enderror"
+               value="{{ old('contact_number', $patient->contact_number ?? '') }}" maxlength="30"
+               inputmode="tel" pattern="^\+?[0-9\s\-\(\)]{7,20}$"
+               title="Enter 7–20 digits. May include +, spaces, dashes, and parentheses." autocomplete="tel">
+        @error('contact_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
 </div>
 
 <div class="row">
     <div class="col-md-6 mb-3">
         <label class="form-label">Residential Address</label>
-        <input type="text" name="residential_address" class="form-control"
-               value="{{ old('residential_address', $patient->residential_address ?? '') }}">
+        <input type="text" name="residential_address" class="form-control @error('residential_address') is-invalid @enderror"
+               value="{{ old('residential_address', $patient->residential_address ?? '') }}" maxlength="255" autocomplete="street-address">
+        @error('residential_address')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     <div class="col-md-3 mb-3">
         <label class="form-label">Race</label>
         @php $race = old('race', $patient->race ?? ''); @endphp
-        <select name="race" class="form-select">
+        <select name="race" class="form-select @error('race') is-invalid @enderror">
             <option value="">-- Select --</option>
             @foreach(['Black', 'White', 'Asian', 'Hispanic', 'Mixed', 'Other'] as $r)
                 <option value="{{ $r }}" {{ $race === $r ? 'selected' : '' }}>{{ $r }}</option>
             @endforeach
         </select>
+        @error('race')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     
     <div class="col-md-3 mb-3">
         <label class="form-label">Religion</label>
         @php $religion = old('religion', $patient->religion ?? ''); @endphp
-        <select name="religion" class="form-select">
+        <select name="religion" class="form-select @error('religion') is-invalid @enderror">
             <option value="">-- Select --</option>
             @foreach(['Christianity', 'Islam', 'Hinduism', 'Buddhism', 'Judaism', 'Traditional', 'Other'] as $rel)
                 <option value="{{ $rel }}" {{ $religion === $rel ? 'selected' : '' }}>{{ $rel }}</option>
             @endforeach
         </select>
+        @error('religion')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     
 </div>
@@ -107,29 +128,33 @@
 <div class="row">
     <div class="col-md-3 mb-3">
         <label class="form-label">Language</label>
-        <input type="text" name="language" class="form-control"
-               value="{{ old('language', $patient->language ?? '') }}">
+        <input type="text" name="language" class="form-control @error('language') is-invalid @enderror"
+               value="{{ old('language', $patient->language ?? '') }}" maxlength="100" autocomplete="language">
+        @error('language')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     <div class="col-md-3 mb-3">
         <label class="form-label">Denomination</label>
         @php $denom = old('denomination', $patient->denomination ?? ''); @endphp
-        <select name="denomination" class="form-select">
+        <select name="denomination" class="form-select @error('denomination') is-invalid @enderror">
             <option value="">-- Select --</option>
             @foreach(['Catholic', 'Protestant', 'Orthodox', 'Evangelical', 'Pentecostal', 'Other'] as $d)
                 <option value="{{ $d }}" {{ $denom === $d ? 'selected' : '' }}>{{ $d }}</option>
             @endforeach
         </select>
+        @error('denomination')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     
     <div class="col-md-3 mb-3">
         <label class="form-label">Marital Status</label>
-        <input type="text" name="marital_status" class="form-control"
-               value="{{ old('marital_status', $patient->marital_status ?? '') }}">
+        <input type="text" name="marital_status" class="form-control @error('marital_status') is-invalid @enderror"
+               value="{{ old('marital_status', $patient->marital_status ?? '') }}" maxlength="50">
+        @error('marital_status')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     <div class="col-md-3 mb-3">
         <label class="form-label">Occupation</label>
-        <input type="text" name="occupation" class="form-control"
-               value="{{ old('occupation', $patient->occupation ?? '') }}">
+        <input type="text" name="occupation" class="form-control @error('occupation') is-invalid @enderror"
+               value="{{ old('occupation', $patient->occupation ?? '') }}" maxlength="100">
+        @error('occupation')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
 </div>
 
@@ -137,85 +162,245 @@
     <div class="col-md-3 mb-3">
         <label class="form-label">Blood Group</label>
         @php $bg = old('blood_group', $patient->blood_group ?? ''); @endphp
-        <select name="blood_group" class="form-select">
+        <select name="blood_group" class="form-select @error('blood_group') is-invalid @enderror">
             <option value="">-- Select --</option>
-            @foreach(['O+', 'A+', 'B+', 'AB+', 'O−', 'A−', 'B−', 'AB−'] as $group)
+            @foreach(['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-','O−','A−','B−','AB−'] as $group)
                 <option value="{{ $group }}" {{ $bg === $group ? 'selected' : '' }}>{{ $group }}</option>
             @endforeach
         </select>
+        @error('blood_group')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     
     <div class="col-md-3 mb-3">
         <label class="form-label">Allergies</label>
-        <input type="text" name="allergies" class="form-control"
-               value="{{ old('allergies', $patient->allergies ?? '') }}">
+        <input type="text" name="allergies" class="form-control @error('allergies') is-invalid @enderror"
+               value="{{ old('allergies', $patient->allergies ?? '') }}" maxlength="255">
+        @error('allergies')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     <div class="col-md-3 mb-3">
         <label class="form-label">Disabilities</label>
-        <input type="text" name="disabilities" class="form-control"
-               value="{{ old('disabilities', $patient->disabilities ?? '') }}">
+        <input type="text" name="disabilities" class="form-control @error('disabilities') is-invalid @enderror"
+               value="{{ old('disabilities', $patient->disabilities ?? '') }}" maxlength="255">
+        @error('disabilities')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     <div class="col-md-4 mb-3">
         <label class="form-label">Special Diet</label>
-        <input type="text" name="special_diet" class="form-control"
-               value="{{ old('special_diet', $patient->special_diet ?? '') }}">
+        <input type="text" name="special_diet" class="form-control @error('special_diet') is-invalid @enderror"
+               value="{{ old('special_diet', $patient->special_diet ?? '') }}" maxlength="255">
+        @error('special_diet')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
 </div>
 
 <div class="row">
     <div class="col-md-4 mb-3">
         <label class="form-label">Medical Aid Provider</label>
-        <input type="text" name="medical_aid_provider" class="form-control"
-               value="{{ old('medical_aid_provider', $patient->medical_aid_provider ?? '') }}">
+        <input type="text" name="medical_aid_provider" id="medical_aid_provider"
+               class="form-control @error('medical_aid_provider') is-invalid @enderror"
+               value="{{ old('medical_aid_provider', $patient->medical_aid_provider ?? '') }}" maxlength="150">
+        @error('medical_aid_provider')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     <div class="col-md-4 mb-3">
         <label class="form-label">Medical Aid Number</label>
-        <input type="text" name="medical_aid_number" class="form-control"
-               value="{{ old('medical_aid_number', $patient->medical_aid_number ?? '') }}">
+        <input type="text" name="medical_aid_number" id="medical_aid_number"
+               class="form-control @error('medical_aid_number') is-invalid @enderror"
+               value="{{ old('medical_aid_number', $patient->medical_aid_number ?? '') }}" maxlength="100">
+        @error('medical_aid_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
+        <div class="form-text">Required if a provider is specified.</div>
     </div>
   
 </div>
 
 <div class="mb-3">
     <label class="form-label">Special Medical Requirements</label>
-    <textarea name="special_medical_requirements" rows="2" class="form-control">{{ old('special_medical_requirements', $patient->special_medical_requirements ?? '') }}</textarea>
+    <textarea name="special_medical_requirements" rows="2" class="form-control @error('special_medical_requirements') is-invalid @enderror" maxlength="2000">{{ old('special_medical_requirements', $patient->special_medical_requirements ?? '') }}</textarea>
+    @error('special_medical_requirements')<div class="invalid-feedback">{{ $message }}</div>@enderror
 </div>
 <div class="mb-3">
     <label class="form-label">Current Medications</label>
-    <textarea name="current_medications" rows="2" class="form-control">{{ old('current_medications', $patient->current_medications ?? '') }}</textarea>
+    <textarea name="current_medications" rows="2" class="form-control @error('current_medications') is-invalid @enderror" maxlength="2000">{{ old('current_medications', $patient->current_medications ?? '') }}</textarea>
+    @error('current_medications')<div class="invalid-feedback">{{ $message }}</div>@enderror
 </div>
 <div class="mb-3">
     <label class="form-label">Past Medical History</label>
-    <textarea name="past_medical_history" rows="2" class="form-control">{{ old('past_medical_history', $patient->past_medical_history ?? '') }}</textarea>
+    <textarea name="past_medical_history" rows="2" class="form-control @error('past_medical_history') is-invalid @enderror" maxlength="2000">{{ old('past_medical_history', $patient->past_medical_history ?? '') }}</textarea>
+    @error('past_medical_history')<div class="invalid-feedback">{{ $message }}</div>@enderror
 </div>
 
 <div class="row">
     <div class="col-md-4 mb-3">
         <label class="form-label">Next of Kin Name</label>
-        <input type="text" name="next_of_kin_name" class="form-control"
-               value="{{ old('next_of_kin_name', $patient->next_of_kin_name ?? '') }}">
+        <input type="text" name="next_of_kin_name" id="nok_name"
+               class="form-control @error('next_of_kin_name') is-invalid @enderror"
+               value="{{ old('next_of_kin_name', $patient->next_of_kin_name ?? '') }}" maxlength="150" autocomplete="name">
+        @error('next_of_kin_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     <div class="col-md-4 mb-3">
         <label class="form-label">Relationship</label>
-        <input type="text" name="next_of_kin_relationship" class="form-control"
-               value="{{ old('next_of_kin_relationship', $patient->next_of_kin_relationship ?? '') }}">
+        <input type="text" name="next_of_kin_relationship" id="nok_relationship"
+               class="form-control @error('next_of_kin_relationship') is-invalid @enderror"
+               value="{{ old('next_of_kin_relationship', $patient->next_of_kin_relationship ?? '') }}" maxlength="100">
+        @error('next_of_kin_relationship')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     <div class="col-md-4 mb-3">
         <label class="form-label">Next of Kin Contact</label>
-        <input type="text" name="next_of_kin_contact_number" class="form-control"
-               value="{{ old('next_of_kin_contact_number', $patient->next_of_kin_contact_number ?? '') }}">
+        <input type="tel" name="next_of_kin_contact_number" id="nok_contact"
+               class="form-control @error('next_of_kin_contact_number') is-invalid @enderror"
+               value="{{ old('next_of_kin_contact_number', $patient->next_of_kin_contact_number ?? '') }}"
+               maxlength="30" inputmode="tel" pattern="^\+?[0-9\s\-\(\)]{7,20}$"
+               title="Enter 7–20 digits. May include +, spaces, dashes, and parentheses.">
+        @error('next_of_kin_contact_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
 </div>
 
 <div class="row">
     <div class="col-md-6 mb-3">
         <label class="form-label">Next of Kin Email</label>
-        <input type="email" name="next_of_kin_email" class="form-control"
-               value="{{ old('next_of_kin_email', $patient->next_of_kin_email ?? '') }}">
+        <input type="email" name="next_of_kin_email" id="nok_email"
+               class="form-control @error('next_of_kin_email') is-invalid @enderror"
+               value="{{ old('next_of_kin_email', $patient->next_of_kin_email ?? '') }}" maxlength="255" autocomplete="email">
+        @error('next_of_kin_email')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     <div class="col-md-6 mb-3">
         <label class="form-label">Next of Kin Address</label>
-        <input type="text" name="next_of_kin_address" class="form-control"
-               value="{{ old('next_of_kin_address', $patient->next_of_kin_address ?? '') }}">
+        <input type="text" name="next_of_kin_address" id="nok_address"
+               class="form-control @error('next_of_kin_address') is-invalid @enderror"
+               value="{{ old('next_of_kin_address', $patient->next_of_kin_address ?? '') }}" maxlength="255" autocomplete="street-address">
+        @error('next_of_kin_address')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const form = document.getElementById('patient-form'); // Ensure your <form> has id="patient-form"
+    if (!form) return;
+
+    const nationalId = document.getElementById('national_id_number');
+    const passport = document.getElementById('passport_number');
+    const provider = document.getElementById('medical_aid_provider');
+    const providerNo = document.getElementById('medical_aid_number');
+
+    const nokFields = [
+        document.getElementById('nok_name'),
+        document.getElementById('nok_relationship'),
+        document.getElementById('nok_contact'),
+        document.getElementById('nok_email'),
+        document.getElementById('nok_address'),
+    ];
+
+    const photoInput = document.getElementById('photo');
+
+    function setInvalid(el, msg) {
+        if (!el) return;
+        el.setCustomValidity(msg || '');
+        el.classList.toggle('is-invalid', !!msg);
+        // Bootstrap feedback will show on submit; for live feedback:
+        // if (msg) el.reportValidity();
+    }
+
+    function validateIdPair() {
+        const hasNat = nationalId && nationalId.value.trim().length > 0;
+        const hasPass = passport && passport.value.trim().length > 0;
+
+        let msg = '';
+        if (!hasNat && !hasPass) {
+            msg = 'Provide either a National ID Number or a Passport Number.';
+        }
+
+        // Apply message to both so user can correct either
+        setInvalid(nationalId, msg);
+        setInvalid(passport, msg);
+
+        return hasNat || hasPass;
+    }
+
+    function validateMedicalAid() {
+        const hasProvider = provider && provider.value.trim().length > 0;
+        // number must be present if provider is given
+        if (providerNo) {
+            const hasNumber = providerNo.value.trim().length > 0;
+            const msg = hasProvider && !hasNumber ? 'Medical Aid Number is required when a provider is specified.' : '';
+            setInvalid(providerNo, msg);
+            return !(hasProvider && !hasNumber);
+        }
+        return true;
+    }
+
+    function validateNextOfKinGroup() {
+        const anyFilled = nokFields.some(el => el && el.value.trim().length > 0);
+        if (!anyFilled) {
+            // Clear custom validity if previously set
+            nokFields.forEach(el => setInvalid(el, ''));
+            return true;
+        }
+        // If any is filled, require all
+        let ok = true;
+        nokFields.forEach(el => {
+            const missing = !el || el.value.trim().length === 0;
+            setInvalid(el, missing ? 'This field is required when any Next of Kin detail is provided.' : '');
+            if (missing) ok = false;
+        });
+        return ok;
+    }
+
+    function validatePhoto() {
+        if (!photoInput || !photoInput.files || photoInput.files.length === 0) {
+            setInvalid(photoInput, '');
+            return true;
+        }
+        const file = photoInput.files[0];
+        // Size check: <= 2MB
+        if (file.size > 2 * 1024 * 1024) {
+            setInvalid(photoInput, 'Photo must be 2MB or smaller.');
+            return false;
+        }
+        // Dimensions check: >= 80x80
+        return new Promise(resolve => {
+            const img = new Image();
+            img.onload = function () {
+                const ok = img.width >= 80 && img.height >= 80;
+                setInvalid(photoInput, ok ? '' : 'Photo must be at least 80x80 pixels.');
+                resolve(ok);
+            };
+            img.onerror = function () {
+                setInvalid(photoInput, 'Unable to read the selected image.');
+                resolve(false);
+            };
+            const url = URL.createObjectURL(file);
+            img.src = url;
+        });
+    }
+
+    // Live validations
+    [nationalId, passport].forEach(el => el && el.addEventListener('input', validateIdPair));
+    [provider, providerNo].forEach(el => el && el.addEventListener('input', validateMedicalAid));
+    nokFields.forEach(el => el && el.addEventListener('input', validateNextOfKinGroup));
+    if (photoInput) photoInput.addEventListener('change', () => validatePhoto());
+
+    form.addEventListener('submit', async function (e) {
+        // Trigger built-in HTML5 validations first
+        if (!form.checkValidity()) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        const idOk = validateIdPair();
+        const aidOk = validateMedicalAid();
+        const nokOk = validateNextOfKinGroup();
+        const photoOk = await validatePhoto();
+
+        if (!idOk || !aidOk || !nokOk || !photoOk) {
+            e.preventDefault();
+            e.stopPropagation();
+            // Optionally focus first invalid
+            const firstInvalid = form.querySelector('.is-invalid, :invalid');
+            if (firstInvalid && typeof firstInvalid.focus === 'function') {
+                firstInvalid.focus();
+            }
+        }
+
+        form.classList.add('was-validated'); // Bootstrap visual cue
+    });
+})();
+</script>
+@endpush

@@ -282,11 +282,11 @@
                     <i class="bi bi-cloud-arrow-down-fill me-2"></i> Data Backup & Restore
                 </a>
             </li>
-            <li class="nav-item">
+            {{-- <li class="nav-item">
                 <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.index*') ? 'active' : '' }}">
                     <i class="bi bi-people me-2"></i> User Role Assignment
                 </a>
-            </li>
+            </li> --}}
         @endif
     </ul>
 </nav>
