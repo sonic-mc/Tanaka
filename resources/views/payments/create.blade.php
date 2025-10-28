@@ -18,7 +18,7 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ route('payments.store', $invoice) }}">
+    <form method="POST" action="{{ route('invoice.payments.store', $invoice) }}">
         @csrf
 
         <div class="mb-3">
