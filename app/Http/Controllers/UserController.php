@@ -9,9 +9,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
-use App\Traits\AuditLogger;
 use Illuminate\Validation\Rule;
+use App\Traits\AuditLogger;
 
 class UserController extends Controller
 {
@@ -19,14 +18,10 @@ class UserController extends Controller
 
     /**
      * Listing + tabs entry point.
-     * Supports tab switching via ?tab=...
      */
     public function index(Request $request)
     {
         $tab = $request->get('tab', 'view-users');
-  
-
-        // Basic users query for several tabs (filters applied from request)
         $query = User::query();
 
         if ($request->filled('role')) {
@@ -42,9 +37,7 @@ class UserController extends Controller
         }
 
         $users = $query->orderBy('name')->paginate(20)->withQueryString();
-       
 
-        // If the audit-logs tab is active, fetch audit logs (with optional user filter).
         $logs = null;
         if ($tab === 'audit-logs') {
             $logsQuery = AuditLog::with('user')->orderByDesc('timestamp');
@@ -61,14 +54,14 @@ class UserController extends Controller
     }
 
     /**
-     * Create user (POST).
+     * Create user (POST) – role optional
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'role' => ['required', Rule::in(['admin', 'psychiatrist', 'nurse', 'clinician'])],
+            'role' => ['nullable', Rule::in(['admin', 'psychiatrist', 'nurse', 'clinician'])],
             'password' => 'required|string|min:8|confirmed',
         ]);
 
@@ -77,11 +70,10 @@ class UserController extends Controller
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
-                'role' => $validated['role'],
+                'role' => $validated['role'] ?? null, // allow NULL role
                 'password' => Hash::make($validated['password']),
             ]);
 
-            // audit if trait available
             if (method_exists($this, 'audit')) {
                 $this->audit('info', 'user-created', [
                     'module' => 'users',
@@ -112,25 +104,32 @@ class UserController extends Controller
     }
 
     /**
-     * Update user
+     * Update user – role optional
      */
     public function update(Request $request, User $user)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => ['required','email', Rule::unique('users','email')->ignore($user->id)],
-            'role' => ['required', Rule::in(['admin', 'psychiatrist', 'nurse', 'clinician'])],
+            'role' => ['nullable', Rule::in(['admin', 'psychiatrist', 'nurse', 'clinician'])],
         ]);
 
         DB::beginTransaction();
         try {
-            $user->update($validated);
+            $oldRole = $user->role;
+            $user->update([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'role' => $validated['role'] ?? null,
+            ]);
 
             if (method_exists($this, 'audit')) {
                 $this->audit('info', 'user-updated', [
                     'module' => 'users',
                     'user_id' => $user->id,
                     'updated_by' => Auth::id(),
+                    'old_role' => $oldRole,
+                    'new_role' => $user->role,
                     'description' => "User {$user->email} updated",
                 ]);
             }
@@ -147,7 +146,7 @@ class UserController extends Controller
     }
 
     /**
-     * Delete user (hard delete). Keep robust: prevent deleting currently authenticated user.
+     * Delete user (hard delete)
      */
     public function destroy(User $user)
     {
@@ -180,40 +179,7 @@ class UserController extends Controller
     }
 
     /**
-     * Deactivate user.
-     * Note: the migration you provided does not include an `active` column.
-     * This method will only work if a boolean `active` column exists. If it doesn't,
-     * it returns a helpful error message.
-     */
-    public function deactivate(Request $request)
-    {
-        $request->validate(['user_id' => 'required|exists:users,id']);
-
-        $user = User::findOrFail($request->user_id);
-
-        if (! Schema::hasColumn('users', 'active')) {
-            return back()->withErrors([
-                'deactivate' => 'The users table does not have an "active" column. To enable deactivation, add a boolean `active` column to your users migration.'
-            ]);
-        }
-
-        $user->update(['active' => false]);
-
-        if (method_exists($this, 'audit')) {
-            $this->audit('info', 'user-deactivated', [
-                'module' => 'users',
-                'user_id' => $user->id,
-                'deactivated_by' => Auth::id(),
-                'description' => "User {$user->email} deactivated",
-            ]);
-        }
-
-        return redirect()->route('admin.users.index', ['tab' => 'manage-users'])
-            ->with('success', 'User deactivated.');
-    }
-
-    /**
-     * Update role (from manage UI)
+     * Update role separately (admin assigns role)
      */
     public function updateRole(Request $request)
     {
@@ -251,55 +217,26 @@ class UserController extends Controller
     }
 
     /**
-     * Reset password (admin action). Does not send email automatically.
-     * If you want an email, integrate Notification/Password broker.
+     * Dashboard routing based on role
      */
-    public function resetPassword(Request $request)
+    public function dashboard()
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'new_password' => 'required|string|min:8|confirmed',
-        ]);
+        $user = auth()->user();
 
-        $user = User::findOrFail($request->user_id);
-
-        DB::beginTransaction();
-        try {
-            $user->update(['password' => Hash::make($request->new_password)]);
-
-            if (method_exists($this, 'audit')) {
-                $this->audit('info', 'user-password-reset', [
-                    'module' => 'users',
-                    'user_id' => $user->id,
-                    'reset_by' => Auth::id(),
-                    'description' => "Password reset by admin",
-                ]);
-            }
-
-            DB::commit();
-
-            return back()->with('success', 'Password reset successfully.');
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            report($e);
-            return back()->withErrors(['error' => 'Could not reset password: ' . $e->getMessage()]);
-        }
-    }
-
-    /**
-     * Audit logs viewer (separate action if you want to link directly)
-     */
-    public function auditLogs(Request $request)
-    {
-        $logsQuery = AuditLog::with('user')->orderByDesc('timestamp');
-
-        if ($request->filled('user_id')) {
-            $logsQuery->where('user_id', $request->user_id);
+        if (! $user) {
+            return redirect()->route('login');
         }
 
-        $logs = $logsQuery->paginate(30)->withQueryString();
-        $users = User::orderBy('name')->get();
+        if (empty($user->role)) {
+            return $this->defaultDashboard();
+        }
 
-        return view('admin.users.manage', compact('logs', 'users'));
+        return match ($user->role) {
+            'admin'        => $this->adminDashboard(),
+            'psychiatrist' => $this->psychiatristDashboard(request()),
+            'nurse'        => $this->nurseDashboard(),
+            'clinician'    => $this->clinicianDashboard(),
+            default        => $this->defaultDashboard(),
+        };
     }
 }
