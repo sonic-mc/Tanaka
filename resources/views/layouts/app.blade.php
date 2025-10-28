@@ -174,7 +174,7 @@
         </li>
 
         {{-- Clinician --}}
-        @if(auth()->user()->hasRole('clinician'))
+        @if(auth()->user()->role === 'clinician')
             <li class="nav-item mt-3 text-white fw-bold">Clinician</li>
             <li class="nav-item">
                 <a href="{{ route('patients.index') }}" class="nav-link {{ isActive('patients*') }}">
@@ -190,7 +190,7 @@
         @endif
 
         {{-- Psychiatrist & Nurse --}}
-        @if(auth()->user()->hasAnyRole(['psychiatrist','nurse']))
+        @if(in_array(auth()->user()->role, ['psychiatrist', 'nurse']))
             <li class="nav-item mt-3 text-white fw-bold">Clinical Staff</li>
             <li class="nav-item">
                 <a href="{{ route('progress-reports.index') }}" class="nav-link {{ isActive('progress-reports*') }}">
@@ -216,6 +216,7 @@
 
         {{-- Psychiatrist Exclusive --}}
         @if(auth()->user()->hasRole('psychiatrist'))
+
             <li class="nav-item mt-3 text-white fw-bold">Psychiatrist</li>
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle {{ request()->routeIs('evaluations.*') ? 'active' : '' }}" 
@@ -264,7 +265,8 @@
         @endif
 
         {{-- Admin --}}
-        @if(auth()->user()->hasRole('admin'))
+        @if(auth()->user()->role === 'admin')
+
             <li class="nav-item mt-3 text-white fw-bold">Administrator</li>
             <li class="nav-item">
                 <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">

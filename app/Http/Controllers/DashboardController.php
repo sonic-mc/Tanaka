@@ -39,11 +39,12 @@ class DashboardController extends Controller
         }
 
         // If user has no roles, default dashboard
-        if ($user->roles->isEmpty()) {
+        if (!$user->role) {
             return $this->defaultDashboard();
         }
 
-        $role = $user->roles->first()->name;
+        $role = $user->role;
+     
 
         switch ($role) {
             case 'admin':

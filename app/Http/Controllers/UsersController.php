@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
-use Spatie\Permission\Models\Role;
 
 class UsersController extends Controller
 {
@@ -15,22 +14,21 @@ class UsersController extends Controller
     public function index()
     {
         // Restrict to admins only
-        if (!auth()->user()->hasRole('admin')) {
+        if (auth()->user()->role !== 'admin') {
             abort(403, 'Unauthorized access');
         }
-    
-        // Get users with no roles
-        $users = User::doesntHave('roles')->get();
-    
+
+        // Get users with no role explicitly set (null or empty)
+        $users = User::whereNull('role')->orWhere('role', '')->get();
+
         // Count users without roles
         $noRoleCount = $users->count();
 
-         // Get all available roles
-        $roles = Role::all();
-    
+        // Define available roles manually
+        $roles = ['admin', 'psychiatrist', 'nurse', 'clinician'];
+
         return view('users.index', compact('users', 'noRoleCount', 'roles'));
     }
-    
 
     /**
      * Assign a role to a user.
@@ -38,18 +36,17 @@ class UsersController extends Controller
     public function assignRole(Request $request, $id)
     {
         // Restrict to admins only
-        if (!auth()->user()->hasRole('admin')) {
+        if (auth()->user()->role !== 'admin') {
             abort(403, 'Unauthorized access');
         }
 
         $request->validate([
-            'role' => 'required|exists:roles,name',
+            'role' => 'required|in:admin,psychiatrist,nurse,clinician',
         ]);
 
         $user = User::findOrFail($id);
-
-        // Remove any old roles and assign the new one
-        $user->syncRoles([$request->role]);
+        $user->role = $request->role;
+        $user->save();
 
         return redirect()->back()->with('success', "Role '{$request->role}' assigned to {$user->name} successfully!");
     }

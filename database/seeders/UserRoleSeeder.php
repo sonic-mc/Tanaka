@@ -17,9 +17,9 @@ class UserRoleSeeder extends Seeder
         ];
 
         foreach ($users as $data) {
-            User::updateOrCreate(
-                ['email' => $data['email']],
+            User::create(
                 [
+                    'email' => $data['email'],    
                     'name' => $data['name'],
                     'role' => $data['role'],
                     'password' => Hash::make('password'),
