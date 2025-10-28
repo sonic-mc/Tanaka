@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\CareLevelController;
 use App\Http\Controllers\PatientController;
+
 use App\Http\Controllers\ProgressReportController;
 use App\Http\Controllers\DischargeController;
 use App\Http\Controllers\TaskController;
@@ -29,7 +30,8 @@ use App\Http\Controllers\ConsultationFeeController;
 use App\Http\Controllers\GradingController;
 use App\Http\Controllers\FeedbackController;
 
-
+// Note: The 'role' middleware alias is bound to App\Http\Middleware\RoleMiddleware
+// in AppServiceProvider::boot using $router->aliasMiddleware('role', ...).
 
 // Homepage
 Route::get('/', function () {
@@ -60,19 +62,17 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('notifications', NotificationController::class);
 });
 
-// Nurse & Psychiatrist routes using Spatie's role middleware
+// Nurse & Psychiatrist routes using custom role middleware
 Route::middleware(['auth', 'role:psychiatrist|nurse'])->group(function () {
     Route::resource('progress-reports', ProgressReportController::class);
     Route::resource('therapy-sessions', TherapySessionController::class);
     Route::resource('incidents', IncidentReportController::class);
-    Route::resource('therapy-sessions', TherapySessionController::class);
-
 
     Route::post('/notifications/mark-read/{notification}', [NotificationController::class, 'markRead'])
         ->name('notifications.markRead');
 });
 
-// Admin routes using Spatie's role middleware
+// Admin routes using custom role middleware
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('roles-permissions', [DashboardController::class, 'index'])->name('admin.roles-permissions');
     Route::post('roles', [DashboardController::class, 'storeRole'])->name('admin.roles.store');
@@ -81,9 +81,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::post('users/assign-role', [DashboardController::class, 'assignRole'])->name('admin.users.assign-role');
 });
 
-
-
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     // Main user management dashboard
     Route::get('users', [UserController::class, 'index'])->name('users.index');
 
@@ -110,36 +108,29 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('users/audit-logs', [UserController::class, 'auditLogs'])->name('users.auditLogs');
 });
 
-
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('logs', [AuditLogController::class, 'index'])->name('logs.index');
     Route::get('logs/export', [AuditLogController::class, 'export'])->name('logs.export');
 });
 
- // Database notifications actions
- Route::post('/dashboard/notifications/{notification}/read', [DashboardNotificationController::class, 'markAsRead'])
- ->name('dashboard.notifications.read');
+// Database notifications actions
+Route::post('/dashboard/notifications/{notification}/read', [DashboardNotificationController::class, 'markAsRead'])
+    ->name('dashboard.notifications.read');
 Route::post('/dashboard/notifications/read-all', [DashboardNotificationController::class, 'markAllAsRead'])
- ->name('dashboard.notifications.markAll');
-
+    ->name('dashboard.notifications.markAll');
 
 Route::post('patients/{patient}/assign-nurse', [PatientController::class, 'assignNurse'])->name('patients.assign-nurse');
-
 Route::get('patients/{patient}/admit', [PatientController::class, 'admit'])->name('patients.admit');
-
 
 Route::middleware(['auth', 'role:psychiatrist|nurse'])->group(function () {
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::post('/reports/export', [ReportController::class, 'export'])->name('reports.export');
 });
 
-
-
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/users', [UsersController::class, 'index'])->name('users.index');
     Route::post('/users/{id}/assign-role', [UsersController::class, 'assignRole'])->name('users.assignRole');
 });
-
 
 Route::resource('evaluations', PatientEvaluationController::class);
 Route::post('evaluations/{id}/restore', [PatientEvaluationController::class, 'restore'])->name('evaluations.restore');
@@ -157,22 +148,23 @@ Route::post('patients/{id}/restore', [PatientController::class, 'restore'])->nam
 Route::delete('patients/{id}/force-delete', [PatientController::class, 'forceDelete'])->name('patients.force-delete');
 
 Route::get('/grading', [GradingController::class, 'index'])->name('grading.index');
-    Route::get('/grading/{evaluation}', [GradingController::class, 'show'])->name('grading.show');
-    Route::post('/grading/{evaluation}/recalculate', [GradingController::class, 'recalculate'])->name('grading.recalculate');
-
+Route::get('/grading/{evaluation}', [GradingController::class, 'show'])->name('grading.show');
+Route::post('/grading/{evaluation}/recalculate', [GradingController::class, 'recalculate'])->name('grading.recalculate');
 
 Route::get('nurse-assignments', [NurseAssignmentController::class, 'index'])->name('nurse-assignments.index');
 Route::get('nurse-assignments/create', [NurseAssignmentController::class, 'create'])->name('nurse-assignments.create');
-Route::get('nurse-assignments/edit{id}', [NurseAssignmentController::class, 'edit'])->name('nurse-assignments.edit');
+Route::get('nurse-assignments/{id}/edit', [NurseAssignmentController::class, 'edit'])->name('nurse-assignments.edit');
 Route::post('nurse-assignments', [NurseAssignmentController::class, 'store'])->name('nurse-assignments.store');
 Route::delete('nurse-assignments/{id}', [NurseAssignmentController::class, 'destroy'])->name('nurse-assignments.destroy');
 
 Route::prefix('admin')->name('admin.')->group(function () {
-    Route::resource('billings', BillingController::class);
+    // If you intended BillingStatementController, adjust accordingly
+    // Route::resource('billings', BillingStatementController::class);
+    // Otherwise, ensure BillingController is imported at the top if it exists.
+    Route::resource('billings', \App\Http\Controllers\BillingController::class);
 });
 
-
-// Progress reports
+// Progress reports (admin prefixed, no role guard here; relies on controller for checks)
 Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
     // resourceful routes
     Route::resource('progress-reports', \App\Http\Controllers\ProgressReportController::class)
@@ -187,16 +179,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 
 Route::resource('care_levels', CareLevelController::class);
 
- // Create/store discharge for a specific admission
- Route::get('/admissions/{admission}/discharge', [DischargeController::class, 'create'])
- ->name('admissions.discharge.create');
-
+// Create/store discharge for a specific admission
+Route::get('/admissions/{admission}/discharge', [DischargeController::class, 'create'])
+    ->name('admissions.discharge.create');
 Route::post('/admissions/{admission}/discharge', [DischargeController::class, 'store'])
- ->name('admissions.discharge.store');
+    ->name('admissions.discharge.store');
 
 // Manage discharges
 Route::resource('discharges', DischargeController::class)->except(['create', 'store']);
-
 
 Route::middleware('auth')->group(function () {
     Route::get('/feedback/create', [FeedbackController::class, 'create'])->name('feedback.create');
@@ -206,9 +196,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/feedback', [FeedbackController::class, 'index'])->name('feedback.index');
 });
 
-
 Route::resource('consultation_fees', ConsultationFeeController::class);
-  // download by invoice id -> will look for storage/app/public/invoices/invoice_{invoice_number}.pdf
+// download by invoice id -> will look for storage/app/public/invoices/invoice_{invoice_number}.pdf
 Route::get('invoices/{invoice}/download', function ($invoiceId) {
     $invoice = \App\Models\Invoice::findOrFail($invoiceId);
 
@@ -223,7 +212,6 @@ Route::get('invoices/{invoice}/download', function ($invoiceId) {
         'Content-Type' => 'application/pdf',
     ]);
 })->name('invoices.download')->middleware('auth');
-
 
 // Include billing routes
 require __DIR__ . '/billing.php';

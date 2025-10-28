@@ -24,6 +24,7 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $tab = $request->get('tab', 'view-users');
+  
 
         // Basic users query for several tabs (filters applied from request)
         $query = User::query();
@@ -41,6 +42,7 @@ class UserController extends Controller
         }
 
         $users = $query->orderBy('name')->paginate(20)->withQueryString();
+       
 
         // If the audit-logs tab is active, fetch audit logs (with optional user filter).
         $logs = null;
