@@ -251,6 +251,13 @@
                     <i class="bi bi-hospital me-2"></i> Admissions Management
                 </a>
             </li>
+
+            <li class="nav-item">
+                <a href="{{ route('discharges.index') }}" class="nav-link {{ request()->routeIs('discharges.*') ? 'active' : '' }}">
+                    <i class="bi bi-box-arrow-right me-2"></i> Discharges
+                </a>
+            </li>
+            
             <li class="nav-item">
                 <a href="{{ route('nurse-assignments.index') }}" class="nav-link {{ request()->routeIs('nurse-assignments.*') ? 'active' : '' }}">
                     <i class="bi bi-person-badge me-2"></i> Nurse Assignments

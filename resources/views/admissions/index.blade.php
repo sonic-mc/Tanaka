@@ -12,6 +12,15 @@
     @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
+    @if($errors->any())
+        <div class="alert alert-danger mb-2">
+            <ul class="mb-0">
+                @foreach($errors->all() as $e)
+                    <li>{{ $e }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     <div class="card">
         <div class="card-body p-0">
@@ -26,7 +35,7 @@
                             <th>Care Level</th>
                             <th>Status</th>
                             <th>Admitted By</th>
-                            <th style="width:180px">Actions</th>
+                            <th style="width:240px">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -34,11 +43,7 @@
                             <tr>
                                 <td>{{ $ad->patient->first_name ?? '' }} {{ $ad->patient->last_name ?? '' }}</td>
                                 <td>{{ $ad->patient->patient_code ?? '' }}</td>
-                                <td>
-                                    {{ $ad->admission_date
-                                        ? \Illuminate\Support\Carbon::parse($ad->admission_date)->format('Y-m-d')
-                                        : '—' }}
-                                </td>
+                                <td>{{ optional($ad->admission_date)->format('Y-m-d') ?: '—' }}</td>
                                 <td>{{ $ad->room_number ?? '—' }}</td>
                                 <td>{{ $ad->careLevel->name ?? ($ad->care_level_id ?? '—') }}</td>
                                 <td>
@@ -47,11 +52,30 @@
                                     </span>
                                 </td>
                                 <td>{{ optional($ad->admittedBy)->name ?? '—' }}</td>
-                                <td>
+                                <td class="text-nowrap">
                                     <a href="{{ route('admissions.show', $ad) }}" class="btn btn-sm btn-outline-info">View</a>
-                                
-                                    @if(auth()->user()->role === 'psychiatrist')
+
+                                    @if(auth()->check() && auth()->user()->role === 'psychiatrist')
                                         <a href="{{ route('admissions.edit', $ad) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+
+                                        {{-- Discharge actions (only when active) --}}
+                                        @if($ad->status === 'active')
+                                            <a href="{{ route('discharges.create', $ad) }}"
+                                               class="btn btn-sm btn-outline-success">
+                                                Discharge
+                                            </a>
+
+                                            {{-- Optional: quick discharge with today's date --}}
+                                            <form action="{{ route('discharges.store', $ad) }}"
+                                                  method="POST"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Discharge this patient today?')">
+                                                @csrf
+                                                <input type="hidden" name="discharge_date" value="{{ \Illuminate\Support\Carbon::now()->format('Y-m-d') }}">
+                                                <button class="btn btn-sm btn-success">Quick Discharge (Today)</button>
+                                            </form>
+                                        @endif
+
                                         <form action="{{ route('admissions.destroy', $ad) }}" method="POST" class="d-inline ms-1" onsubmit="return confirm('Delete this admission?')">
                                             @csrf
                                             @method('DELETE')
@@ -59,7 +83,6 @@
                                         </form>
                                     @endif
                                 </td>
-                                
                             </tr>
                         @empty
                             <tr><td colspan="8" class="text-center py-3">No admissions found.</td></tr>
