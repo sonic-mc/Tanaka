@@ -8,7 +8,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\{
     Admission,
     PatientDetail,
-    Discharge,
+    DischargedPatient,
     PatientEvaluation,
     IncidentReport,
     PatientProgressReport,
@@ -134,7 +134,7 @@ class ReportController extends Controller
                     break;
 
                 case 'discharges':
-                    $query = Discharge::with(['patient', 'dischargedBy']); // patient relation fixed in model below
+                    $query = DischargedPatient::with(['patient', 'dischargedBy']); // patient relation fixed in model below
                     $data['discharges'] = $perPatient($query)->latest()->take($limit)->get();
                     break;
 
