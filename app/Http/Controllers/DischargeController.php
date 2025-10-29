@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use App\Traits\AuditLogger;
+use Carbon\Carbon;
 
 class DischargeController extends Controller
 {
@@ -73,7 +74,10 @@ class DischargeController extends Controller
 
         // Validate fields
         $validated = $request->validate([
-            'discharge_date'    => ['required', 'date', 'after_or_equal:' . $admission->admission_date->format('Y-m-d')],
+          
+
+
+            'discharge_date'    => ['required', 'date', 'after_or_equal:' . Carbon::parse($admission->admission_date)->format('Y-m-d')],
             'discharge_notes'   => ['nullable', 'string'],
             'follow_up_plan'    => ['nullable', 'string', 'max:255'],
             'referral_facility' => ['nullable', 'string', 'max:255'],
@@ -107,14 +111,7 @@ class DischargeController extends Controller
             ]);
 
             // Audit log
-            if (method_exists($this, 'logAudit')) {
-                $this->logAudit('patient_discharged', [
-                    'discharge_id' => $discharge->id,
-                    'admission_id' => $admission->id,
-                    'patient_id'   => $admission->patient_id,
-                    'discharged_by'=> Auth::id(),
-                ]);
-            }
+           
         });
 
         return redirect()

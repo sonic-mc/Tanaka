@@ -9,6 +9,8 @@ class Admission extends Model
 {
     use SoftDeletes;
 
+    
+
     protected $fillable = [
         'patient_id',
         'evaluation_id',

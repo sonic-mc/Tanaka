@@ -66,14 +66,14 @@
                                             </a>
 
                                             {{-- Optional: quick discharge with today's date --}}
-                                            <form action="{{ route('discharges.store', $ad) }}"
+                                            {{-- <form action="{{ route('discharges.store', $ad) }}"
                                                   method="POST"
                                                   class="d-inline"
                                                   onsubmit="return confirm('Discharge this patient today?')">
                                                 @csrf
                                                 <input type="hidden" name="discharge_date" value="{{ \Illuminate\Support\Carbon::now()->format('Y-m-d') }}">
                                                 <button class="btn btn-sm btn-success">Quick Discharge (Today)</button>
-                                            </form>
+                                            </form> --}}
                                         @endif
 
                                         <form action="{{ route('admissions.destroy', $ad) }}" method="POST" class="d-inline ms-1" onsubmit="return confirm('Delete this admission?')">

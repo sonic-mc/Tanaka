@@ -57,10 +57,11 @@
                     </td>
                     <td>
                         @if($d->admission)
-                            #{{ $d->admission_id }} ({{ $d->admission->admission_date?->format('Y-m-d') }})
-                        @else
-                            #{{ $d->admission_id }}
-                        @endif
+                        #{{ $d->admission_id }} ({{ \Carbon\Carbon::parse($d->admission->admission_date)->format('Y-m-d') }})
+                    @else
+                        #{{ $d->admission_id }}
+                    @endif
+                    
                     </td>
                     <td>{{ $d->discharge_date?->format('Y-m-d') }}</td>
                     <td>

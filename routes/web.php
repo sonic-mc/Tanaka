@@ -150,20 +150,21 @@ Route::get('patients/lookup', [PatientController::class, 'lookup'])->name('patie
 
 Route::resource('admissions', AdmissionsController::class);
 
-Route::middleware(['auth'])->group(function () {
-    // Discharge listing and management
-    Route::get('/discharges', [DischargeController::class, 'index'])->name('discharges.index');
-    Route::get('/discharges/{discharge}', [DischargeController::class, 'show'])->name('discharges.show');
-    Route::get('/discharges/{discharge}/edit', [DischargeController::class, 'edit'])->name('discharges.edit');
-    Route::put('/discharges/{discharge}', [DischargeController::class, 'update'])->name('discharges.update');
-    Route::delete('/discharges/{discharge}', [DischargeController::class, 'destroy'])->name('discharges.destroy');
+ // Discharge listing and management
+ Route::get('/discharges', [DischargeController::class, 'index'])->name('discharges.index');
+ Route::get('/discharges/{discharge}', [DischargeController::class, 'show'])->name('discharges.show');
+ Route::get('/discharges/{discharge}/edit', [DischargeController::class, 'edit'])->name('discharges.edit');
+ Route::put('/discharges/{discharge}', [DischargeController::class, 'update'])->name('discharges.update');
+ Route::delete('/discharges/{discharge}', [DischargeController::class, 'destroy'])->name('discharges.destroy');
 
-    // Tie discharge create/store to an Admission (route–model binding)
-    Route::get('/admissions/{admission}/discharge', [DischargeController::class, 'create'])
-        ->name('discharges.create');
-    Route::post('/admissions/{admission}/discharge', [DischargeController::class, 'store'])
-        ->name('discharges.store');
-});
+ // Tie discharge create/store to an Admission (route–model binding)
+// Show discharge form
+Route::get('/admissions/{admission}/discharge', [DischargeController::class, 'create'])
+->name('discharges.create');
+ Route::post('/admissions/{admission}/discharge', [DischargeController::class, 'store'])
+     ->name('discharges.store');
+
+
 
 Route::resource('patients', PatientController::class);
 // Additional routes for soft deletes
@@ -202,14 +203,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 
 Route::resource('care_levels', CareLevelController::class);
 
-// Create/store discharge for a specific admission
-Route::get('/admissions/{admission}/discharge', [DischargeController::class, 'create'])
-    ->name('admissions.discharge.create');
-Route::post('/admissions/{admission}/discharge', [DischargeController::class, 'store'])
-    ->name('admissions.discharge.store');
 
-// Manage discharges
-Route::resource('discharges', DischargeController::class)->except(['create', 'store']);
 
 Route::middleware('auth')->group(function () {
     Route::get('/feedback/create', [FeedbackController::class, 'create'])->name('feedback.create');
