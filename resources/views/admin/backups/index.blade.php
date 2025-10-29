@@ -42,7 +42,7 @@
                     <tr>
                         <th>Filename</th>
                         <th>Type</th>
-                        <th>Status</th>
+                        {{-- <th>Status</th> --}}
                         <th>Created By</th>
                         <th>Created At</th>
                         <th>Restored At</th>
@@ -54,7 +54,7 @@
                     <tr>
                         <td><code>{{ $backup->filename ?? basename($backup->file_path) }}</code></td>
                         <td><span class="badge bg-secondary">{{ ucfirst($backup->type) }}</span></td>
-                        <td>
+                        {{-- <td>
                             <span class="badge 
                                 @if($backup->status === 'completed') bg-success
                                 @elseif($backup->status === 'failed') bg-danger
@@ -64,7 +64,7 @@
                                 @endif">
                                 {{ ucfirst($backup->status) }}
                             </span>
-                        </td>
+                        </td> --}}
                         <td>
                             @if($backup->creator)
                                 <span class="fw-semibold">{{ $backup->creator->name }}</span><br>

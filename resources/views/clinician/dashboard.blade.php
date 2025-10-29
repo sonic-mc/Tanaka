@@ -4,48 +4,41 @@
     <!-- Bootstrap Icons (optional but recommended) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
-        /* Subtle, modern card styling */
         .stat-card {
-            border: 0;
-            border-radius: 0.75rem;
-            overflow: hidden;
             position: relative;
+            overflow: hidden;
+            border: none;
+            border-radius: 0.75rem;
+            transition: transform 0.2s ease-in-out;
         }
+    
+        .stat-card:hover {
+            transform: scale(1.02);
+        }
+    
+        .bg-shape {
+            position: absolute;
+            top: -20%;
+            right: -20%;
+            width: 150%;
+            height: 150%;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.15), transparent);
+            z-index: 0;
+        }
+    
         .stat-card .card-body {
             position: relative;
-            z-index: 2;
+            z-index: 1;
         }
-        .stat-card .bg-shape {
-            position: absolute;
-            right: -30px;
-            top: -30px;
-            width: 140px;
-            height: 140px;
-            border-radius: 50%;
-            opacity: 0.15;
-            transform: rotate(25deg);
+    
+        .stat-card .display-6 {
+            font-size: 2.5rem;
         }
-        .card-zoom {
-            transition: transform .15s ease, box-shadow .15s ease;
-        }
-        .card-zoom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 .5rem 1rem rgba(0,0,0,.10)!important;
-        }
-        .avatar-sm {
-            width: 42px;
-            height: 42px;
-            object-fit: cover;
-            border-radius: 50%;
-        }
-        .text-muted-small {
-            font-size: .875rem;
-            color: var(--bs-secondary-color);
-        }
-        .list-group-flush .list-group-item {
-            padding-left: 0;
-            padding-right: 0;
-        }
+    
+        .text-bg-info    { background-color: #4da6ff !important; color: #fff; }
+        .text-bg-primary { background-color: #007bff !important; color: #fff; }
+        .text-bg-success { background-color: #28a745 !important; color: #fff; }
+        .text-bg-warning { background-color: #ffc107 !important; color: #212529; }
     </style>
 @endpush
 
@@ -256,15 +249,37 @@
                             </thead>
                             <tbody>
                                 @foreach($recentPatients as $p)
+                                    @php
+                                        // Determine fallback image by gender
+                                        $g = strtolower($p->gender ?? '');
+                                        $genderFallback = $g === 'female'
+                                            ? 'images/download (1).jpeg'
+                                            : 'images/download (2).jpeg';
+
+                                        // Prefer uploaded photo if present
+                                        $candidate = !empty($p->photo) ? ('storage/' . ltrim($p->photo, '/')) : $genderFallback;
+
+                                        // Server-side safety: ensure candidate exists, otherwise fall back
+                                        if (!file_exists(public_path($candidate))) {
+                                            $candidate = $genderFallback;
+                                            if (!file_exists(public_path($candidate))) {
+                                                $candidate = 'images/download (2).jpeg';
+                                            }
+                                        }
+                                    @endphp
                                     <tr>
                                         <td class="d-flex align-items-center gap-2">
-                                            @if(!empty($p->photo))
-                                                <img src="{{ asset('storage/'.$p->photo) }}" class="avatar-sm" alt="photo">
-                                            @else
-                                                <div class="bg-secondary-subtle border rounded-circle d-inline-block" style="width:42px;height:42px;"></div>
-                                            @endif
+                                            <img
+                                                src="{{ asset($candidate) }}"
+                                                alt="avatar"
+                                                class="rounded-circle object-fit-cover"
+                                                style="width:42px;height:42px;"
+                                                onerror="this.onerror=null;this.src='{{ asset('images/download (2).jpeg') }}';"
+                                            >
                                             <div>
-                                                <div class="fw-semibold text-truncate">{{ $p->full_name ?? ($p->first_name.' '.$p->last_name) }}</div>
+                                                <div class="fw-semibold text-truncate">
+                                                    {{ $p->full_name ?? ($p->first_name.' '.$p->last_name) }}
+                                                </div>
                                                 <div class="text-muted-small">{{ $p->email ?: '—' }}</div>
                                             </div>
                                         </td>
