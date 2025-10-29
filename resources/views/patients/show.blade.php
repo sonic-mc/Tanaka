@@ -18,16 +18,16 @@
         $invoices = Invoice::where('patient_id', $patient->id ?? 0)->get();
     }
 
-    // Normalize gender and build a robust fallback chain for the avatar
-    $g = strtolower($patient->gender ?? '');
+  // Choose avatar based on gender
+  $g = strtolower($patient->gender ?? '');
     $avatarPath = match ($g) {
-        'female' => 'images/avatars/female.svg',
-        'male' => 'images/avatars/male.svg',
-        default => 'images/avatars/other.svg',
+        'female' => 'images/download (1).jpeg',
+        'male'   => 'images/download (2).jpeg',
+        default  => 'images/download (2).jpeg',
     };
-    // Server-side fallback if target file is missing (prevents broken src)
+    // Server-side fallback if missing
     if (!file_exists(public_path($avatarPath))) {
-        $avatarPath = 'images/avatars/male.svg';
+        $avatarPath = 'images/download (2).jpeg';
     }
 @endphp
 
@@ -57,7 +57,7 @@
                 width="120"
                 height="120"
                 class="rounded object-fit-cover"
-                onerror="this.onerror=null;this.src='{{ asset('images/avatars/male.svg') }}';"
+                onerror="this.onerror=null;this.src='{{ asset('images/download (2).jpeg') }}';"
             >
         </div>
         <div>

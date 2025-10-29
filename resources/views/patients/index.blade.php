@@ -42,47 +42,61 @@
         </tr>
     </thead>
     <tbody>
-    @forelse($patients as $patient)
-        @php
-            $avatarPath = $patient->gender === 'female'
-                ? 'images/avatars/female.svg'
-                : ($patient->gender === 'male' ? 'images/avatars/male.svg' : 'images/avatars/other.svg');
-        @endphp
-        <tr @if($patient->deleted_at) class="table-warning" @endif>
-            <td>
-                <img src="{{ asset($avatarPath) }}" alt="Avatar" width="48" height="48" class="rounded-circle object-fit-cover">
-            </td>
-            <td>{{ $patient->patient_code }}</td>
-            <td>{{ $patient->first_name }} {{ $patient->last_name }}</td>
-            <td>{{ ucfirst($patient->gender) }}</td>
-            <td>{{ optional($patient->dob)->format('Y-m-d') }}</td>
-            <td>{{ $patient->contact_number }}</td>
-            <td>{{ $patient->deleted_at ? 'Archived' : 'Active' }}</td>
-            <td>
-                <a href="{{ route('patients.show', $patient->id) }}" class="btn btn-sm btn-info">View</a>
-
-                @if(!$patient->deleted_at)
-                    <a href="{{ route('patients.edit', $patient) }}" class="btn btn-sm btn-warning">Edit</a>
-                    <form action="{{ route('patients.destroy', $patient) }}" method="POST" class="d-inline">
-                        @csrf @method('DELETE')
-                        <button class="btn btn-sm btn-danger" onclick="return confirm('Archive this patient?')">Archive</button>
-                    </form>
-                @else
-                    <form action="{{ route('patients.restore', $patient->id) }}" method="POST" class="d-inline">
-                        @csrf
-                        <button class="btn btn-sm btn-secondary" onclick="return confirm('Restore this patient?')">Restore</button>
-                    </form>
-                    <form action="{{ route('patients.force-delete', $patient->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Permanently delete this patient? This cannot be undone.')">
-                        @csrf @method('DELETE')
-                        <button class="btn btn-sm btn-outline-danger">Delete Permanently</button>
-                    </form>
-                @endif
-            </td>
-        </tr>
-    @empty
-        <tr><td colspan="8" class="text-center">No patients found.</td></tr>
-    @endforelse
-    </tbody>
+        @forelse($patients as $patient)
+            @php
+                $g = strtolower($patient->gender ?? '');
+                $avatarPath = match ($g) {
+                    'female' => 'images/download (1).jpeg',
+                    'male'   => 'images/download (2).jpeg',
+                    default  => 'images/download (2).jpeg', // default/fallback
+                };
+                // Server-side safety: if the chosen file is missing, fall back
+                if (!file_exists(public_path($avatarPath))) {
+                    $avatarPath = 'images/download (2).jpeg';
+                }
+            @endphp
+            <tr @if($patient->deleted_at) class="table-warning" @endif>
+                <td>
+                    <img
+                        src="{{ asset($avatarPath) }}"
+                        alt="Avatar"
+                        width="48"
+                        height="48"
+                        class="rounded-circle object-fit-cover"
+                        onerror="this.onerror=null;this.src='{{ asset('images/download (2).jpeg') }}';"
+                    >
+                </td>
+                <td>{{ $patient->patient_code }}</td>
+                <td>{{ $patient->first_name }} {{ $patient->last_name }}</td>
+                <td>{{ ucfirst($patient->gender) }}</td>
+                <td>{{ optional($patient->dob)->format('Y-m-d') }}</td>
+                <td>{{ $patient->contact_number }}</td>
+                <td>{{ $patient->deleted_at ? 'Archived' : 'Active' }}</td>
+                <td>
+                    <a href="{{ route('patients.show', $patient->id) }}" class="btn btn-sm btn-info">View</a>
+                    @if(!$patient->deleted_at)
+                        <a href="{{ route('patients.edit', $patient) }}" class="btn btn-sm btn-warning">Edit</a>
+                        <form action="{{ route('patients.destroy', $patient) }}" method="POST" class="d-inline">
+                            @csrf @method('DELETE')
+                            <button class="btn btn-sm btn-danger" onclick="return confirm('Archive this patient?')">Archive</button>
+                        </form>
+                    @else
+                        <form action="{{ route('patients.restore', $patient->id) }}" method="POST" class="d-inline">
+                            @csrf
+                            <button class="btn btn-sm btn-secondary" onclick="return confirm('Restore this patient?')">Restore</button>
+                        </form>
+                        <form action="{{ route('patients.force-delete', $patient->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Permanently delete this patient? This cannot be undone.')">
+                            @csrf @method('DELETE')
+                            <button class="btn btn-sm btn-outline-danger">Delete Permanently</button>
+                        </form>
+                    @endif
+                </td>
+            </tr>
+        @empty
+            <tr><td colspan="8" class="text-center">No patients found.</td></tr>
+        @endforelse
+        </tbody>
+        
 </table>
 
 {{ $patients->links() }}
