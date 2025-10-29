@@ -41,9 +41,22 @@
                     @forelse($reports as $r)
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <div>
-                                <div><strong>{{ $r->patient->first_name }} {{ $r->patient->last_name }}</strong> — {{ $r->patient->patient_code }}</div>
-                                <div class="small text-muted">{{ $r->report_date->format('Y-m-d') }} by {{ $r->creator->name ?? '—' }}</div>
+                                <div>
+                                    <strong>
+                                        {{ optional($r->patient)->first_name ?? 'N/A' }}
+                                        {{ optional($r->patient)->last_name ?? '' }}
+                                    </strong>
+                                    —
+                                    {{ optional($r->patient)->patient_code ?? 'N/A' }}
+                                </div>
+                            
+                                <div class="small text-muted">
+                                    {{ $r->report_date ? $r->report_date->format('Y-m-d') : '—' }}
+                                    by
+                                    {{ optional($r->creator)->name ?? '—' }}
+                                </div>
                             </div>
+                            
                             <div class="text-end">
                                 <a href="{{ route('admin.progress-reports.show', $r) }}" class="btn btn-sm btn-outline-info">View</a>
                                 <a href="{{ route('admin.progress-reports.compare', $r->patient_id) }}" class="btn btn-sm btn-outline-secondary">Trend</a>
