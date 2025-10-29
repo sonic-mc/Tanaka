@@ -153,6 +153,8 @@ Route::resource('admissions', AdmissionsController::class);
 Route::middleware(['auth'])->group(function () {
     // Discharge listing and management
     Route::get('/discharges', [DischargeController::class, 'index'])->name('discharges.index');
+    Route::get('/admissions/{admission}/discharge', [DischargeController::class, 'create'])
+    ->name('discharges.create');
     Route::get('/discharges/{discharge}', [DischargeController::class, 'show'])->name('discharges.show');
     Route::get('/discharges/{discharge}/edit', [DischargeController::class, 'edit'])->name('discharges.edit');
     Route::put('/discharges/{discharge}', [DischargeController::class, 'update'])->name('discharges.update');
