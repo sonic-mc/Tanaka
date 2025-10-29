@@ -79,12 +79,25 @@
                     </thead>
                     <tbody>
                         @forelse($reports as $report)
-                            <tr>
-                                <td>{{ \Illuminate\Support\Carbon::parse($report->incident_date)->toDateString() }}</td>
-                                <td>{{ $report->patient->first_name }} {{ $report->patient->last_name }}</td>
-                                <td>{{ $report->reportedBy->name }}</td>
-                                <td>{{ \Illuminate\Support\Str::limit($report->description, 80) }}</td>
-                            </tr>
+                        <tr>
+                            <td>
+                                {{ $report->incident_date ? \Illuminate\Support\Carbon::parse($report->incident_date)->toDateString() : '—' }}
+                            </td>
+                        
+                            <td>
+                                {{ optional($report->patient)->first_name ?? 'N/A' }}
+                                {{ optional($report->patient)->last_name ?? '' }}
+                            </td>
+                        
+                            <td>
+                                {{ optional($report->reportedBy)->name ?? '—' }}
+                            </td>
+                        
+                            <td>
+                                {{ $report->description ? \Illuminate\Support\Str::limit($report->description, 80) : 'No description' }}
+                            </td>
+                        </tr>
+                        
                         @empty
                             <tr><td colspan="4" class="text-muted text-center">No incidents found.</td></tr>
                         @endforelse
