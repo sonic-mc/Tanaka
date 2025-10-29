@@ -62,4 +62,10 @@ class PatientEvaluation extends Model
     {
         return $this->belongsTo(\App\Models\User::class, 'updated_by');
     }
+
+    public function admission()
+    {
+        return $this->hasOne(\App\Models\Admission::class, 'evaluation_id');
+    }
+
 }

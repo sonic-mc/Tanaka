@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\PatientDetail;
 use App\Models\PatientEvaluation;
+use App\Models\Admission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class PatientEvaluationController extends Controller
@@ -100,29 +102,34 @@ class PatientEvaluationController extends Controller
             'admission_trigger_notes' => ['nullable', 'string'],
         ]);
 
-        $requiresAdmission = ($request->boolean('requires_admission'))
-            || ($validated['decision'] === 'admit')
-            || ($validated['severity_level'] === 'critical')
-            || ($validated['risk_level'] === 'high')
-            || ((int)($validated['priority_score'] ?? 0) >= 8);
+        return DB::transaction(function () use ($request, $validated) {
+            $requiresAdmission = ($request->boolean('requires_admission'))
+                || ($validated['decision'] === 'admit')
+                || ($validated['severity_level'] === 'critical')
+                || ($validated['risk_level'] === 'high')
+                || ((int)($validated['priority_score'] ?? 0) >= 8);
 
-        $evaluation = new PatientEvaluation();
-        $evaluation->fill($validated);
-        $evaluation->psychiatrist_id = Auth::id();
-        $evaluation->created_by = Auth::id();
-        $evaluation->last_modified_by = Auth::id();
-        $evaluation->requires_admission = $requiresAdmission;
-        $evaluation->decision_made_at = now();
+            $evaluation = new PatientEvaluation();
+            $evaluation->fill($validated);
+            $evaluation->psychiatrist_id = Auth::id();
+            $evaluation->created_by = Auth::id();
+            $evaluation->last_modified_by = Auth::id();
+            $evaluation->requires_admission = $requiresAdmission;
+            $evaluation->decision_made_at = now();
 
-        if ($requiresAdmission && empty($validated['admission_trigger_notes'])) {
-            $evaluation->admission_trigger_notes = 'Auto-flagged by decision/severity/risk/priority logic.';
-        }
+            if ($requiresAdmission && empty($validated['admission_trigger_notes'])) {
+                $evaluation->admission_trigger_notes = 'Auto-flagged by decision/severity/risk/priority logic.';
+            }
 
-        $evaluation->save();
+            $evaluation->save();
 
-        return redirect()
-            ->route('evaluations.show', $evaluation->id)
-            ->with('status', 'Evaluation created successfully.');
+            // Auto-admit if conditions are met
+            $this->autoAdmitIfRequired($evaluation);
+
+            return redirect()
+                ->route('evaluations.show', $evaluation->id)
+                ->with('status', 'Evaluation created successfully.'.($evaluation->requires_admission && $evaluation->decision === 'admit' ? ' Patient auto-admitted.' : ''));
+        });
     }
 
     public function show(string $id)
@@ -136,10 +143,6 @@ class PatientEvaluationController extends Controller
     {
         $evaluation = PatientEvaluation::with(['patient', 'psychiatrist'])->findOrFail($id);
         $patients = PatientDetail::orderBy('first_name')->get(['id', 'first_name', 'middle_name', 'last_name', 'patient_code']);
-
-        // Note: Your routes don’t currently include an update endpoint.
-        // If you want to enable saving from the edit view, add:
-        // Route::put('/patient-evaluations/{id}', [PatientEvaluationController::class, 'update'])->name('evaluations.update');
 
         return view('patient_evaluations.edit', [
             'evaluation' => $evaluation,
@@ -172,27 +175,71 @@ class PatientEvaluationController extends Controller
             'admission_trigger_notes' => ['nullable', 'string'],
         ]);
 
-        $requiresAdmission = ($request->boolean('requires_admission'))
-            || ($validated['decision'] === 'admit')
-            || ($validated['severity_level'] === 'critical')
-            || ($validated['risk_level'] === 'high')
-            || ((int)($validated['priority_score'] ?? 0) >= 8);
+        return DB::transaction(function () use ($request, $evaluation, $validated) {
+            $requiresAdmission = ($request->boolean('requires_admission'))
+                || ($validated['decision'] === 'admit')
+                || ($validated['severity_level'] === 'critical')
+                || ($validated['risk_level'] === 'high')
+                || ((int)($validated['priority_score'] ?? 0) >= 8);
 
-        $evaluation->fill($validated);
-        $evaluation->requires_admission = $requiresAdmission;
-        $evaluation->last_modified_by = Auth::id();
+            $evaluation->fill($validated);
+            $evaluation->requires_admission = $requiresAdmission;
+            $evaluation->last_modified_by = Auth::id();
 
-        if ($requiresAdmission && empty($validated['admission_trigger_notes'])) {
-            $evaluation->admission_trigger_notes = 'Auto-flagged by decision/severity/risk/priority logic.';
+            if ($requiresAdmission && empty($validated['admission_trigger_notes'])) {
+                $evaluation->admission_trigger_notes = 'Auto-flagged by decision/severity/risk/priority logic.';
+            }
+
+            $evaluation->decision_made_at = now();
+            $evaluation->save();
+
+            // Auto-admit if conditions are met and no active admission exists
+            $this->autoAdmitIfRequired($evaluation);
+
+            return redirect()
+                ->route('evaluations.show', $evaluation->id)
+                ->with('status', 'Evaluation updated successfully.'.($evaluation->requires_admission && $evaluation->decision === 'admit' ? ' Patient auto-admitted.' : ''));
+        });
+    }
+
+    /**
+     * Create an admission when the evaluation indicates admission and no active admission exists.
+     */
+    private function autoAdmitIfRequired(PatientEvaluation $evaluation): void
+    {
+        // Must explicitly be an admission decision and requires_admission true
+        if (!($evaluation->decision === 'admit' && $evaluation->requires_admission)) {
+            return;
         }
 
-        // Decision time refresh on edits
-        $evaluation->decision_made_at = now();
+        // Prevent duplicate active admissions for the patient
+        $alreadyActive = Admission::query()
+            ->where('patient_id', $evaluation->patient_id)
+            ->where('status', 'active')
+            ->whereNull('deleted_at')
+            ->exists();
 
-        $evaluation->save();
+        if ($alreadyActive) {
+            return;
+        }
 
-        return redirect()
-            ->route('evaluations.show', $evaluation->id)
-            ->with('status', 'Evaluation updated successfully.');
+        Admission::create([
+            'patient_id' => $evaluation->patient_id,
+            'evaluation_id' => $evaluation->id,
+            'admitted_by' => Auth::id(),
+            'assigned_psychiatrist_id' => $evaluation->psychiatrist_id, // same user who created the eval
+            'care_level_id' => null, // set if you have a default
+            'admission_date' => now()->toDateString(),
+            'admission_reason' => trim(
+                'Auto-admitted from evaluation #'.$evaluation->id.
+                ' | Severity: '.($evaluation->severity_level ?? 'n/a').
+                ' | Risk: '.($evaluation->risk_level ?? 'n/a').
+                ($evaluation->admission_trigger_notes ? ' | Notes: '.$evaluation->admission_trigger_notes : '')
+            ),
+            'room_number' => null,
+            'status' => 'active',
+            'created_by' => Auth::id(),
+            'last_modified_by' => Auth::id(),
+        ]);
     }
 }
