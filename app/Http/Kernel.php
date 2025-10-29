@@ -16,11 +16,12 @@ class Kernel extends HttpKernel
             // ... existing api middleware
             \App\Http\Middleware\AuditRequest::class,
         ],
+    ];
 
-        protected $routeMiddleware = [
+    protected $routeMiddleware = [
             // other aliases...
             'role' => \App\Http\Middleware\RoleMiddleware::class,
-        ]
+    ],
 
-    ];
+    
 }

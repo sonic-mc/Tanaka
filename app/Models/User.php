@@ -38,6 +38,11 @@ class User extends Authenticatable
                     ->withTimestamps();
     }
 
+    public function creator()
+{
+    return $this->belongsTo(User::class, 'created_by'); // adjust foreign key if needed
+}
+
     /**
      * The attributes that should be hidden for serialization.
      *

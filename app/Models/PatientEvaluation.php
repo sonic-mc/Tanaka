@@ -51,4 +51,15 @@ class PatientEvaluation extends Model
     {
         return $this->belongsTo(\App\Models\User::class, 'last_modified_by');
     }
+
+    public function creator()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'psychiatrist_id');
+    }
+
+
+    public function lastModifier()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'updated_by');
+    }
 }
